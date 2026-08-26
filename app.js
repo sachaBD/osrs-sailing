@@ -29,7 +29,7 @@ const state = {
   minXp: null,
   maxXp: null,
   hideUnknownXp: false,
-  recoverAtDest: false,
+  recoverAtOrigin: false,
   boardAtDest: false,
   mapOpen: false,
 };
@@ -131,7 +131,7 @@ function filtered() {
     if (!matchesScope(t, state.region, (l) => [regionOf(l)])) return false;
     if (!matchesScope(t, state.ocean, oceansOf)) return false;
     if (!matchesScope(t, state.port, (l) => [l])) return false;
-    if (state.recoverAtDest && !canRecoverAt(t.to)) return false;
+    if (state.recoverAtOrigin && !canRecoverAt(t.from)) return false;
     if (state.boardAtDest && !hasBoardAt(t.to)) return false;
     if (state.direction && t.direction !== state.direction) return false;
     // unknown XP can't satisfy a numeric bound, so an XP filter excludes it
@@ -150,7 +150,7 @@ function filtered() {
 const DERIVED = {
   fromRegion: (r) => regionOf(r.from),
   toRegion: (r) => regionOf(r.to),
-  recover: (r) => (canRecoverAt(r.to) ? 1 : 0),
+  recover: (r) => (canRecoverAt(r.from) ? 1 : 0),
   board: (r) => (hasBoardAt(r.to) ? 1 : 0),
   destDockLevel: (r) => dockLevelOf(r.to),
 };
@@ -192,11 +192,11 @@ function render() {
       <td>${t.noticeBoard}</td>
       <td>${t.from}</td>
       <td class="muted">${regionOf(t.from)}</td>
+      <td class="mid">${canRecoverAt(t.from)
+        ? '<span class="yes" title="Shipwright at ' + t.from + '">✔</span>'
+        : '<span class="no" title="No shipwright at ' + t.from + '">✘</span>'}</td>
       <td>${t.to}</td>
       <td class="muted">${regionOf(t.to)}</td>
-      <td class="mid">${canRecoverAt(t.to)
-        ? '<span class="yes" title="Shipwright at ' + t.to + '">✔</span>'
-        : '<span class="no" title="No shipwright at ' + t.to + '">✘</span>'}</td>
       <td class="mid">${hasBoardAt(t.to)
         ? '<span class="yes" title="Notice board at ' + t.to + '">✔</span>'
         : '<span class="no" title="No notice board at ' + t.to + '">✘</span>'}</td>
@@ -221,7 +221,7 @@ function render() {
 const URL_STR = { q: '', board: '', direction: '', scope: 'any',
                   sortKey: 'xp', sortDir: 'desc' };
 const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null };
-const URL_BOOL = ['hideUnknownXp', 'recoverAtDest', 'boardAtDest'];
+const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest'];
 const URL_SET = ['from', 'to', 'region', 'ocean', 'port'];
 const SEP = '~';   // port names contain spaces, commas and apostrophes; ~ they do not
 
@@ -279,7 +279,7 @@ function syncControls() {
   set('#f-xpmin', state.minXp === null ? '' : state.minXp);
   set('#f-xpmax', state.maxXp === null ? '' : state.maxXp);
   $('#f-unknown').checked = state.hideUnknownXp;
-  $('#f-recover').checked = state.recoverAtDest;
+  $('#f-recover').checked = state.recoverAtOrigin;
   $('#f-board-dest').checked = state.boardAtDest;
   document.querySelectorAll('.ms').forEach((ms) => ms._apply());
 }
@@ -304,7 +304,7 @@ bind('#f-board', 'board');
 bind('#f-direction', 'direction');
 bind('#f-scope', 'scope');
 bind('#f-unknown', 'hideUnknownXp');
-bind('#f-recover', 'recoverAtDest');
+bind('#f-recover', 'recoverAtOrigin');
 bind('#f-board-dest', 'boardAtDest');
 bind('#f-min', 'minLevel', numOr(1));
 bind('#f-max', 'maxLevel', numOr(99));
@@ -328,7 +328,7 @@ $('#reset').addEventListener('click', () => {
   Object.assign(state, {
     q: '', board: '', direction: '', scope: 'any',
     minLevel: 1, maxLevel: 99, minXp: null, maxXp: null,
-    hideUnknownXp: false, recoverAtDest: false, boardAtDest: false,
+    hideUnknownXp: false, recoverAtOrigin: false, boardAtDest: false,
   });
   document.querySelectorAll('.filters input, .filters select').forEach((el) => {
     if (el.type === 'checkbox') el.checked = false;
@@ -346,7 +346,7 @@ $('#export').addEventListener('click', () => {
   const cols = ['level', 'xp', 'noticeBoard', 'from', 'fromRegion', 'to', 'toRegion',
                 'qty', 'direction', 'recover', 'board'];
   const derived = { ...DERIVED,
-    recover: (r) => (canRecoverAt(r.to) ? 'yes' : 'no'),
+    recover: (r) => (canRecoverAt(r.from) ? 'yes' : 'no'),
     board: (r) => (hasBoardAt(r.to) ? 'yes' : 'no') };
   const csv = [cols.join(',')].concat(
     rows.map((r) => cols.map((c) => {

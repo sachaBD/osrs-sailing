@@ -37,7 +37,7 @@
   <div class="field"><label for="f-xpmin">Min XP</label><input id="f-xpmin" type="number" min="0" step="100" placeholder="any"></div>
   <div class="field"><label for="f-xpmax">Max XP</label><input id="f-xpmax" type="number" min="0" step="100" placeholder="any"></div>
   <div class="field check"><input id="f-unknown" type="checkbox"><label for="f-unknown">Hide unknown XP</label></div>
-  <div class="field check"><input id="f-recover" type="checkbox"><label for="f-recover" title="Only tasks ending at a port with a shipwright">Boat recovery at destination</label></div>
+  <div class="field check"><input id="f-recover" type="checkbox"><label for="f-recover" title="Only tasks whose cargo origin has a shipwright">Boat recovery at origin</label></div>
   <div class="field check"><input id="f-board-dest" type="checkbox"><label for="f-board-dest" title="Only tasks ending at a port with a notice board">Task board at destination</label></div>
   <button id="map-toggle">Show map</button>
   <button id="reset">Reset</button>
@@ -76,9 +76,9 @@
       <th data-key="noticeBoard" data-default="asc">Notice board</th>
       <th data-key="from" data-default="asc">Cargo from</th>
       <th data-key="fromRegion" data-default="asc">Region</th>
+      <th data-key="recover" title="Shipwright at the cargo origin: can you recover your boat there?">Recover</th>
       <th data-key="to" data-default="asc">Destination</th>
       <th data-key="toRegion" data-default="asc">Region</th>
-      <th data-key="recover" title="Shipwright at the destination: can you recover your boat there?">Recover</th>
       <th data-key="board" title="Notice board at the destination: can you pick up a new task there?">Board</th>
       <th data-key="qty">Qty</th>
       <th data-key="direction" data-default="asc">Dir</th>
