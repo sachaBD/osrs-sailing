@@ -60,6 +60,25 @@ def strip_js(src):
     return ''.join(out)
 
 
+def check_set_identity(js):
+    """Set-valued state keys must be mutated, never reassigned.
+
+    Each multi-select closes over its Set at construction, so assigning a fresh
+    Set to state.<key> silently disconnects the dropdown from the filter.
+    """
+    m = re.search(r'const URL_SET = \[([^\]]*)\]', js)
+    if not m:
+        return ['URL_SET not found in app.js']
+    keys = re.findall(r"'([^']+)'", m.group(1))
+    bad = []
+    for key in keys:
+        for hit in re.finditer(r'state\.' + key + r'\s*=(?!=)', js):
+            bad.append(f'state.{key} reassigned at line {js.count(chr(10), 0, hit.start()) + 1}')
+    for hit in re.finditer(r'state\[[A-Za-z_]+\]\s*=\s*new Set', js):
+        bad.append(f'state[...] = new Set at line {js.count(chr(10), 0, hit.start()) + 1}')
+    return bad
+
+
 def main():
     ok = True
     for f in ['app.js', 'map.js']:
@@ -83,6 +102,14 @@ def main():
         print(f'  MISSING DOM ids: {missing}')
     else:
         print(f'  DOM ids: {len(refs)} referenced, all present')
+
+    problems = check_set_identity(open('app.js').read())
+    if problems:
+        ok = False
+        for p in problems:
+            print(f'  SET IDENTITY: {p}')
+    else:
+        print('  set identity: Set-valued state keys are only mutated')
 
     scripts = re.findall(r'<script src="([^"]+)"', html)
     print(f'  script order: {scripts}')

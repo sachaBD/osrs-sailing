@@ -262,7 +262,11 @@ function urlToState() {
   }
   for (const k of URL_BOOL) state[k] = p.get(k) === '1';
   for (const k of URL_SET) {
-    state[k] = new Set(p.has(k) ? p.get(k).split(SEP).filter(Boolean) : []);
+    // Mutate rather than reassign: each multi-select closes over its Set, so
+    // replacing the object would silently orphan the dropdown from state.
+    const values = p.has(k) ? p.get(k).split(SEP).filter(Boolean) : [];
+    state[k].clear();
+    for (const v of values) state[k].add(v);
   }
   state.mapOpen = p.get('map') === '1';
 }
