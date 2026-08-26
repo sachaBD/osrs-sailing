@@ -23,7 +23,6 @@ const state = {
   ocean: new Set(),
   port: new Set(),      // set by clicking markers on the map
   scope: 'any',
-  cargo: '',
   direction: '',
   minLevel: 1,
   maxLevel: 99,
@@ -36,7 +35,6 @@ const state = {
 };
 
 const $ = (s) => document.querySelector(s);
-const uniq = (key) => [...new Set(TASKS.map((t) => t[key]))].sort((a, b) => a.localeCompare(b));
 const allLocations = [...new Set(TASKS.flatMap((t) => [t.noticeBoard, t.from, t.to]))].sort((a, b) => a.localeCompare(b));
 
 function fillSelect(id, values, placeholder) {
@@ -130,7 +128,6 @@ function filtered() {
     if (state.board && t.noticeBoard !== state.board) return false;
     if (state.from.size && !state.from.has(t.from)) return false;
     if (state.to.size && !state.to.has(t.to)) return false;
-    if (state.cargo && t.cargo !== state.cargo) return false;
     if (!matchesScope(t, state.region, (l) => [regionOf(l)])) return false;
     if (!matchesScope(t, state.ocean, oceansOf)) return false;
     if (!matchesScope(t, state.port, (l) => [l])) return false;
@@ -142,7 +139,7 @@ function filtered() {
     if (state.minXp !== null && t.xp < state.minXp) return false;
     if (state.maxXp !== null && t.xp > state.maxXp) return false;
     if (q) {
-      const hay = `${t.noticeBoard} ${t.from} ${t.to} ${t.cargo}`.toLowerCase();
+      const hay = `${t.noticeBoard} ${t.from} ${t.to}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -203,10 +200,9 @@ function render() {
       <td class="mid">${hasBoardAt(t.to)
         ? '<span class="yes" title="Notice board at ' + t.to + '">✔</span>'
         : '<span class="no" title="No notice board at ' + t.to + '">✘</span>'}</td>
-      <td>${t.cargo}</td>
       <td class="num">${t.qty}</td>
       <td><span class="tag ${t.direction}">${t.direction}</span></td>
-    </tr>`).join('') || '<tr><td colspan="12" class="empty">No tasks match these filters.</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="11" class="empty">No tasks match these filters.</td></tr>';
 
   stateToUrl();
   if (view.ready) drawOverlay(rows);
@@ -222,12 +218,27 @@ function render() {
 /* ---- URL state ----
    Every filter lives in the query string so a view can be bookmarked or shared.
    Defaults are omitted to keep links short. */
-const URL_STR = { q: '', board: '', cargo: '', direction: '', scope: 'any',
+const URL_STR = { q: '', board: '', direction: '', scope: 'any',
                   sortKey: 'xp', sortDir: 'desc' };
 const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null };
 const URL_BOOL = ['hideUnknownXp', 'recoverAtDest', 'boardAtDest'];
 const URL_SET = ['from', 'to', 'region', 'ocean', 'port'];
 const SEP = '~';   // port names contain spaces, commas and apostrophes; ~ they do not
+
+/* The query string is already a complete serialisation of the view, so it
+   doubles as the storage format: no second schema to keep in step. Bump the
+   key's version suffix if the parameter names ever change meaning. */
+const STORE_KEY = 'osrs-port-tasks:filters:v1';
+
+function store(key, value) {
+  try {
+    if (value) localStorage.setItem(key, value); else localStorage.removeItem(key);
+  } catch (_) { /* private mode or storage full: persistence is a nicety */ }
+}
+
+function stored(key) {
+  try { return localStorage.getItem(key); } catch (_) { return null; }
+}
 
 function stateToUrl() {
   const p = new URLSearchParams();
@@ -240,6 +251,7 @@ function stateToUrl() {
   if (state.mapOpen) p.set('map', '1');
   const qs = p.toString();
   history.replaceState(null, '', qs ? '?' + qs : location.pathname);
+  store(STORE_KEY, qs);
 }
 
 function urlToState() {
@@ -260,7 +272,6 @@ function syncControls() {
   const set = (sel, v) => { const e = $(sel); if (e) e.value = v; };
   set('#f-q', state.q);
   set('#f-board', state.board);
-  set('#f-cargo', state.cargo);
   set('#f-direction', state.direction);
   set('#f-scope', state.scope);
   set('#f-min', state.minLevel === 1 ? '' : state.minLevel);
@@ -283,7 +294,6 @@ function bind(id, key, transform = (v) => v) {
 const numOr = (fallback) => (v) => (v === '' ? fallback : Number(v));
 
 fillSelect('#f-board', allLocations, 'Any notice board');
-fillSelect('#f-cargo', uniq('cargo'), 'Any cargo');
 multiSelect('#f-from', allLocations, 'Any origin', 'from');
 multiSelect('#f-region', [...new Set(Object.values(LOCATIONS).map((v) => v.region))].sort(), 'Any region', 'region');
 multiSelect('#f-ocean', [...new Set(Object.values(LOCATIONS).flatMap((v) => v.oceans))].sort(), 'Any ocean', 'ocean');
@@ -291,7 +301,6 @@ multiSelect('#f-to', allLocations, 'Any destination', 'to');
 
 bind('#f-q', 'q');
 bind('#f-board', 'board');
-bind('#f-cargo', 'cargo');
 bind('#f-direction', 'direction');
 bind('#f-scope', 'scope');
 bind('#f-unknown', 'hideUnknownXp');
@@ -317,7 +326,7 @@ document.querySelectorAll('th[data-key]').forEach((th) => {
 
 $('#reset').addEventListener('click', () => {
   Object.assign(state, {
-    q: '', board: '', cargo: '', direction: '', scope: 'any',
+    q: '', board: '', direction: '', scope: 'any',
     minLevel: 1, maxLevel: 99, minXp: null, maxXp: null,
     hideUnknownXp: false, recoverAtDest: false, boardAtDest: false,
   });
@@ -335,7 +344,7 @@ $('#reset').addEventListener('click', () => {
 $('#export').addEventListener('click', () => {
   const rows = sorted(filtered());
   const cols = ['level', 'xp', 'noticeBoard', 'from', 'fromRegion', 'to', 'toRegion',
-                'cargo', 'qty', 'direction', 'recover', 'board'];
+                'qty', 'direction', 'recover', 'board'];
   const derived = { ...DERIVED,
     recover: (r) => (canRecoverAt(r.to) ? 'yes' : 'no'),
     board: (r) => (hasBoardAt(r.to) ? 'yes' : 'no') };
@@ -354,6 +363,11 @@ $('#export').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+// An explicit link wins; otherwise pick up where this browser left off.
+if (!location.search) {
+  const saved = stored(STORE_KEY);
+  if (saved) history.replaceState(null, '', '?' + saved);
+}
 urlToState();
 syncControls();
 initMap();
