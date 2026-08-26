@@ -1,0 +1,50 @@
+# Region / ocean mapping for OSRS port tasks.  EDIT ME.
+#
+# This file is the source of truth for grouping. `make data` folds it into the app.
+# Columns are tab-separated; opens fine in a spreadsheet too.
+#   region     landmass / kingdom. Zeah covers both Great Kourend and Varlamore.
+#   subregion  optional finer grouping, blank if none.
+#   oceans     pipe-separated. A port on a border may list more than one and will
+#              match a filter for either (e.g. Corsair Cove).
+#
+# `make refresh-oceans` re-checks the oceans column against the wiki. It never
+# overwrites your edits - it only reports differences and fills in blanks.
+#   dock_level     Sailing level needed to dock here.
+#   shipwright     yes = you can recover a capsized/parked boat at this port.
+#   notice_board / salvaging / ledger / crew_registrar   other port amenities.
+#   coords         world x,y - kept for a future map view.
+#
+# `make refresh` re-checks these against the wiki. It fills blanks and reports
+# differences but never overwrites your edits unless you pass --apply.
+
+name	region	subregion	oceans	dock_level	shipwright	notice_board	salvaging	ledger	crew_registrar	requirements	coords
+Aldarin	Zeah	Varlamore	Sunset Ocean	46	yes	yes	yes	yes	no	Completion of Children of the Sun	1452,2970
+Ardougne	Kandarin		Ardent Ocean	28	no	yes	yes	yes	no		2671,3265
+Brimhaven	Karamja		Ardent Ocean	25	yes	yes	yes	yes	no		2758,3230
+Cairn Isle	Karamja		Ardent Ocean	42	no	no	yes	yes	no		2750,2952
+Catherby	Kandarin		Ardent Ocean	20	yes	yes	yes	yes	no		2796,3412
+Civitas illa Fortis	Zeah	Varlamore	Western Ocean	38	yes	yes	yes	yes	no	Completion of Children of the Sun	1775,3142
+Corsair Cove	Feldip Hills		Ardent Ocean|Shrouded Ocean	40	yes	yes	yes	yes	no	Completion of The Corsair Curse	2580,2844
+Deepfin Point	Open ocean		Shrouded Ocean	67	yes	yes	yes	yes	no		1923,2758
+Entrana	Asgarnia		Ardent Ocean	36	no	no	no	yes	no		2879,3336
+Etceteria	Fremennik		Northern Ocean	65	no	yes	yes	yes	no	Completion of Royal Trouble	2613,3840
+Hosidius	Zeah	Great Kourend	Western Ocean	5	no	no	yes	yes	no		1726,3452
+Jatizso	Fremennik		Northern Ocean	68	no	no	yes	yes	no	Completion of Fremennik Isles	2412,3780
+Land's End	Zeah	Great Kourend	Western Ocean	5	yes	yes	yes	yes	no		1507,3403
+Lunar Isle	Fremennik		Northern Ocean	76	no	yes	yes	yes	no	Completion of Lunar Diplomacy	2152,3881
+Musa Point	Karamja		Ardent Ocean	10	yes	yes	yes	yes	no		2961,3146
+Neitiznot	Fremennik		Northern Ocean	68	no	no	yes	yes	no	Completion of Fremennik Isles	2309,3782
+Piscatoris	Kandarin		Western Ocean	75	no	no	yes	yes	no	Completion of Swan Song	2304,3689
+Port Khazard	Kandarin		Ardent Ocean	30	yes	yes	yes	yes	no		2686,3162
+Port Piscarilius	Zeah	Great Kourend	Western Ocean	15	yes	yes	yes	yes	no		1845,3687
+Port Roberts	Zeah	Great Kourend	Western Ocean	50	yes	yes	yes	yes	yes		1861,3307
+Port Sarim	Asgarnia		Ardent Ocean	1	yes	yes	yes	yes	no		3051,3193
+Port Tyras	Tirannwn		Western Ocean	66	no	yes	yes	yes	no	Completion of Regicide	2144,3120
+Prifddinas	Tirannwn		Western Ocean	70	yes	yes	yes	yes	no	Completion of Song of the Elves	2158,3324
+Red Rock	Open ocean		Unquiet Ocean	52	yes	yes	yes	yes	no	Partial completion of The Red Reef	2799,2517
+Rellekka	Fremennik		Northern Ocean	62	yes	yes	yes	yes	no	Completion of Fremennik Trials	2630,3705
+Ruins of Unkah	Kharidian Desert		Ardent Ocean	48	no	yes	yes	yes	no		3144,2825
+Sunset Coast	Zeah	Varlamore	Sunset Ocean	44	no	no	yes	yes	no	Completion of Children of the Sun	1512,2974
+The Pandemonium	Karamja		Ardent Ocean	1	yes	yes	yes	yes	yes		3070,2987
+The Summer Shore	Open ocean		Unquiet Ocean	45	no	yes	yes	yes	no	Completion of Troubled Tortugans	3174,2367
+Void Knights' Outpost	Open ocean		Ardent Ocean	50	no	yes	yes	yes	no		2651,2678

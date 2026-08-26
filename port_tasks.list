@@ -1,0 +1,443 @@
+Sailing
+Level	Sailing
+XP	Notice board	Cargo Location	Destination	Cargo	Qty	Map
+76	13,143	Lunar Isle	Red Rock	Lunar Isle		Red coral	8	Map
+80	12,671	Lunar Isle	Aldarin	Lunar Isle		Potions	8	Map
+65	10,587	Etceteria	Sunset Coast	Etceteria		Swords	5	Map
+75	10,443	Aldarin	Piscatoris	Aldarin		Monkfish	9	Map
+60	9,905	Port Roberts	Catherby	Port Roberts		Honey	5	Map
+64	9,842	Rellekka	Void Knights' Outpost	Rellekka		Arrowtips	5	Map
+72	9,605	Deepfin Point	Rellekka	Deepfin Point		Warhammers	6	Map
+62	9,557	Rellekka	Sunset Coast	Rellekka		Fabrics	5	Map
+76	9,337	Lunar Isle	Civitas illa Fortis	Lunar Isle		Antelope fur	7	Map
+60	9,129	Red Rock	Port Piscarilius	Red Rock		Fish	5	Map
+76	9,092	Lunar Isle	Deepfin Point	Lunar Isle		Coal	7	Map
+72	8,801	Prifddinas	Ardougne	Prifddinas		Silk	6	Map
+55	8,112	Port Roberts	Ardougne	Port Roberts		Silk	3	Map
+75	7,921	Deepfin Point	Red Rock	Deepfin Point		Fabrics	8	Map
+70	7,274	Corsair Cove	Corsair Cove	Port Tyras		Swords	6	Map
+66	7,116	Ardougne	Port Tyras	Ardougne		Rabbit meat	5	Map
+70	7,082	Prifddinas	Aldarin	Prifddinas		Potions	7	Map
+70	7,082	Aldarin	Prifddinas	Aldarin		Dyes	7	Map
+66	6,953	Rellekka	Port Tyras	Rellekka		Halberds	6	Map
+66	6,716	Red Rock	Port Tyras	Red Rock		Furs	6	Map
+68	6,637	Etceteria	Hosidius	Etceteria		Onions	5	Map
+76	6,571	Lunar Isle	Lunar Isle	Red Rock		Astral runes	8	Map
+62	6,521	Port Sarim	Port Sarim	Rellekka		Pies	4	Map
+67	6,479	Red Rock	Deepfin Point	Red Rock		Ores	5	Map
+55	6,302	Void Knights' Outpost	Civitas illa Fortis	Void Knights' Outpost		Maces	3	Map
+70	6,247	Prifddinas	Prifddinas	Deepfin Point		Planks	7	Map
+50	6,155	The Summer Shore	Port Roberts	The Summer Shore		Meat	3	Map
+76	6,032	Port Roberts	Lunar Isle	Port Roberts		Runes	8	Map
+65	6,005	Etceteria	Port Roberts	Etceteria		Fruit	5	Map
+76	5,851	Lunar Isle	Port Roberts	Lunar Isle		Fish	7	Map
+66	5,534	Port Tyras	Aldarin	Port Tyras		Fruit	6	Map
+62	5,527	Port Khazard	Port Khazard	Rellekka		Dragon bitter	4	Map
+76	5,491	Lunar Isle	Prifddinas	Lunar Isle		Potions	8	Map
+66	5,376	Rellekka	Rellekka	Sunset Coast		Fish	6	Map
+46	5,348	The Summer Shore	Aldarin	The Summer Shore		Potions	2	Map
+65	5,294	Etceteria	Etceteria	Sunset Coast		Fabrics	5	Map
+65	5,294	Etceteria	Port Piscarilius	Etceteria		Planks	6	Map
+62	5,278	Rellekka	Port Roberts	Rellekka		Planks	4	Map
+67	5,140	Void Knights' Outpost	Deepfin Point	Void Knights' Outpost		Ores	5	Map
+78	5,131	Prifddinas	Prifddinas	Ardougne		Jewellery	9	Map
+60	5,060	Port Roberts	Port Roberts	Port Sarim		Seeds	5	Map
+75	4,997	Deepfin Point	Deepfin Point	The Summer Shore		Nickel ore	7	Map
+60	4,952	Port Roberts	Port Roberts	Catherby		Silver ore	5	Map
+64	4,921	Rellekka	Rellekka	Void Knights' Outpost		Clothes	5	Map
+72	4,889	Deepfin Point	Deepfin Point	Rellekka		Lead ore	7	Map
+66	4,823	Port Tyras	Land's End	Port Tyras		Seeds	5	Map
+66	4,823	Land's End	Port Tyras	Land's End		Bear meat	5	Map
+62	4,778	Rellekka	Rellekka	Sunset Coast		Warhammers	5	Map
+70	4,721	Prifddinas	Deepfin Point	Prifddinas		Ores	6	Map
+62	4,707	Aldarin	Aldarin	Rellekka		Wine	4	Map
+50	4,674	Aldarin	Void Knights' Outpost	Aldarin		Pest remains	4	Map
+67	4,662	Etceteria	Etceteria	Deepfin Point		Mahogany logs	6	Map
+76	4,636	Lunar Isle	Lunar Isle	Deepfin Point		Suqah hides	8	Map
+67	4,583	Rellekka	Rellekka	Deepfin Point		Furs	5	Map
+60	4,564	Red Rock	Red Rock	Port Piscarilius		Red coral	5	Map
+66	4,504	Port Tyras	Port Piscarilius	Port Tyras		Fish	5	Map
+75	4,501	Port Piscarilius	Piscatoris	Port Piscarilius		Kebbit fur	8	Map
+62	4,494	Rellekka	Port Piscarilius	Rellekka		Redwood logs	4	Map
+72	4,482	Prifddinas	Prifddinas	Ardougne		Crystal seeds	7	Map
+80	4,374	Lunar Isle	Lunar Isle	Land's End		Gems	9	Map
+70	4,374	Land's End	Prifddinas	Land's End		Gems	7	Map
+67	4,349	Deepfin Point	Civitas illa Fortis	Deepfin Point		Alpaca wool	6	Map
+66	4,349	Corsair Cove	Port Tyras	Corsair Cove		Bear meat	5	Map
+70	4,319	Prifddinas	Port Piscarilius	Prifddinas		Books	7	Map
+50	4,258	Void Knights' Outpost	Port Roberts	Void Knights' Outpost		Seeds	3	Map
+76	4,231	Port Piscarilius	Lunar Isle	Port Piscarilius		Books	8	Map
+76	4,231	Lunar Isle	Port Piscarilius	Lunar Isle		Fish	8	Map
+67	4,230	The Summer Shore	The Summer Shore	Deepfin Point		Camphor logs	5	Map
+67	4,191	Civitas illa Fortis	Deepfin Point	Civitas illa Fortis		Ores	5	Map
+66	4,191	Musa Point	Musa Point	Port Tyras		Snakeskin	6	Map
+70	4,156	Prifddinas	Civitas illa Fortis	Prifddinas		Spices	7	Map
+70	4,156	Civitas illa Fortis	Prifddinas	Civitas illa Fortis		Seeds	7	Map
+70	4,156	Port Piscarilius	Prifddinas	Port Piscarilius		Gems	6	Map
+70	4,072	Aldarin	Aldarin	Prifddinas		Potions	7	Map
+75	4,051	Etceteria	Piscatoris	Etceteria		Monkfish	9	Map
+67	4,033	Port Roberts	Deepfin Point	Port Roberts		Ores	5	Map
+67	4,033	Deepfin Point	Port Roberts	Deepfin Point		Fabrics	5	Map
+75	3,961	Deepfin Point	Deepfin Point	Red Rock		Coal	8	Map
+67	3,914	Ruins of Unkah	Ruins of Unkah	Deepfin Point		Granite	5	Map
+60	3,837	Port Roberts	Port Roberts	Red Rock		Herbs	4	Map
+76	3,827	Land's End	Land's End	Lunar Isle		Berries	8	Map
+67	3,795	Deepfin Point	Aldarin	Deepfin Point		Fruit	6	Map
+67	3,795	Aldarin	Deepfin Point	Aldarin		Nickel ore	6	Map
+76	3,781	Lunar Isle	Lunar Isle	Civitas illa Fortis		Astral runes	8	Map
+66	3,748	Port Tyras	Ardougne	Port Tyras		Swords	6	Map
+75	3,691	Rellekka	Piscatoris	Rellekka		Monkfish	7	Map
+66	3,676	Port Tyras	Port Tyras	Brimhaven		Bear meat	6	Map
+75	3,646	Land's End	Land's End	Piscatoris		Furs	8	Map
+66	3,637	Port Tyras	Port Roberts	Port Tyras		Platebodies	5	Map
+70	3,637	Port Tyras	Port Tyras	Deepfin Point		Logs	7	Map
+66	3,635	Ardougne	Ardougne	Port Tyras		Platebodies	6	Map
+66	3,558	Port Tyras	Port Tyras	Ardougne		Halberds	5	Map
+70	3,545	Prifddinas	Prifddinas	Aldarin		Crystal seeds	7	Map
+56	3,513	Red Rock	Red Rock	Port Roberts		Red coral	4	Map
+45	3,502	Brimhaven	The Summer Shore	Brimhaven		Camphor logs	3	Map
+70	3,500	Red Rock	Red Rock	Deepfin Point		Logs	7	Map
+67	3,319	Red Rock	Red Rock	Deepfin Point		Planks	6	Map
+76	3,286	Port Tyras	Port Tyras	Lunar Isle		Logs	7	Map
+50	3,285	The Summer Shore	The Summer Shore	Civitas illa Fortis		Coral	4	Map
+72	3,260	Prifddinas	Prifddinas	Void Knights' Outpost		Runes	6	Map
+55	3,218	Void Knights' Outpost	Void Knights' Outpost	Civitas illa Fortis		Runes	4	Map
+70	3,175	Etceteria	Etceteria	Port Roberts		Flax	6	Map
+70	3,175	Prifddinas	Port Roberts	Prifddinas		Fish	6	Map
+80	3,168	Lunar Isle	Lunar Isle	Prifddinas		Astral runes	9	Map
+76	3,150	Lunar Isle	Piscatoris	Lunar Isle		Kebbit fur	8	Map
+50	3,147	Catherby	Void Knights' Outpost	Catherby		Javelins	3	Map
+70	3,134	Prifddinas	Prifddinas	Rellekka		Planks	7	Map
+67	3,123	Deepfin Point	Deepfin Point	Port Piscarilius		Coal	5	Map
+50	3,078	The Summer Shore	The Summer Shore	Port Roberts		Coral	3	Map
+50	3,055	Aldarin	Port Roberts	Aldarin		Jewellery	3	Map
+76	3,015	Port Roberts	Port Roberts	Lunar Isle		Furs	8	Map
+65	3,004	Etceteria	Etceteria	Port Roberts		Teak logs	5	Map
+40	2,961	Land's End	Corsair Cove	Land's End		Swords	2	Map
+40	2,961	Corsair Cove	Port Piscarilius	Corsair Cove		Fish	2	Map
+76	2,926	Lunar Isle	Lunar Isle	Port Roberts		Fabrics	7	Map
+70	2,853	Deepfin Point	Deepfin Point	Hosidius		Lead ore	7	Map
+76	2,746	Lunar Isle	Lunar Isle	Prifddinas		Herbs	8	Map
+76	2,746	Prifddinas	Prifddinas	Lunar Isle		Crystal seeds	8	Map
+70	2,727	Void Knights' Outpost	Void Knights' Outpost	Deepfin Point		Pest remains	6	Map
+46	2,712	The Summer Shore	The Summer Shore	Aldarin		Crab paste	3	Map
+62	2,708	Rellekka	Rellekka	Port Roberts		Fish	5	Map
+66	2,686	Aldarin	Aldarin	Port Tyras		Shields	5	Map
+68	2,686	Etceteria	Neitiznot	Etceteria		Yak hair	5	Map
+45	2,655	Civitas illa Fortis	Civitas illa Fortis	The Summer Shore		Leather	2	Map
+67	2,647	Void Knights' Outpost	Void Knights' Outpost	Deepfin Point		Javelins	6	Map
+52	2,639	Red Rock	Port Khazard	Red Rock		Fish	3	Map
+52	2,639	Red Rock	Port Sarim	Red Rock		Battleaxes	4	Map
+62	2,636	Port Roberts	Port Roberts	Rellekka		Ship parts	4	Map
+45	2,616	The Summer Shore	Port Sarim	The Summer Shore		Shields	2	Map
+65	2,569	Etceteria	Etceteria	Port Piscarilius		Mahogany logs	5	Map
+68	2,529	Rellekka	Neitiznot	Rellekka		Rope	5	Map
+66	2,529	Void Knights' Outpost	Void Knights' Outpost	Port Tyras		Arrowtips	5	Map
+70	2,526	Land's End	Land's End	Prifddinas		Xerician fabrics	7	Map
+50	2,500	Void Knights' Outpost	Port Sarim	Void Knights' Outpost		Potions	3	Map
+50	2,500	Port Sarim	Void Knights' Outpost	Port Sarim		Pest remains	3	Map
+66	2,491	Land's End	Land's End	Port Tyras		Chinchompas	6	Map
+80	2,464	Lunar Isle	Lunar Isle	Port Piscarilius		Astral runes	9	Map
+46	2,463	Civitas illa Fortis	Aldarin	Civitas illa Fortis		Oranges	2	Map
+46	2,463	Aldarin	Civitas illa Fortis	Aldarin		Spears	2	Map
+50	2,453	Void Knights' Outpost	The Summer Shore	Void Knights' Outpost		Logs	4	Map
+67	2,445	Deepfin Point	Port Piscarilius	Deepfin Point		Planks	5	Map
+70	2,445	Port Tyras	Prifddinas	Port Tyras		Vegetables	7	Map
+75	2,411	Land's End	Piscatoris	Land's End		Kebbit fur	8	Map
+66	2,411	Port Tyras	Port Tyras	Land's End		Furs	5	Map
+46	2,406	Aldarin	Aldarin	Brimhaven		Wine	2	Map
+68	2,371	Rellekka	Jatizso	Rellekka		Adamantite ore	6	Map
+55	2,360	Void Knights' Outpost	Void Knights' Outpost	The Summer Shore		Javelins	3	Map
+66	2,333	Port Tyras	Port Tyras	Port Piscarilius		Planks	6	Map
+70	2,323	Ardougne	Ardougne	Port Tyras		Swords	6	Map
+62	2,316	Port Piscarilius	Port Piscarilius	Rellekka		Beer	5	Map
+70	2,279	Prifddinas	Port Tyras	Prifddinas		Logs	6	Map
+66	2,253	Port Piscarilius	Port Piscarilius	Port Tyras		Furs	5	Map
+66	2,252	Corsair Cove	Corsair Cove	Port Tyras		Herbs	6	Map
+75	2,250	Port Piscarilius	Port Piscarilius	Piscatoris		Fish	8	Map
+62	2,245	Rellekka	Rellekka	Port Piscarilius		Furs	4	Map
+44	2,223	Civitas illa Fortis	Sunset Coast	Civitas illa Fortis		Fish	2	Map
+50	2,176	Void Knights' Outpost	Void Knights' Outpost	Port Roberts		Fish	4	Map
+67	2,175	Civitas illa Fortis	Civitas illa Fortis	Deepfin Point		Alpaca wool	6	Map
+50	2,175	Port Roberts	Port Piscarilius	Port Roberts		Fish	3	Map
+50	2,175	Ruins of Unkah	Void Knights' Outpost	Ruins of Unkah		Javelins	4	Map
+78	2,161	Port Piscarilius	Port Piscarilius	Piscatoris		Vodka	7	Map
+70	2,157	Deepfin Point	Deepfin Point	Port Roberts		Silver ore	6	Map
+48	2,154	Ruins of Unkah	Ardougne	Ruins of Unkah		Fishing supplies	2	Map
+68	2,135	Etceteria	Jatizso	Etceteria		Adamantite ore	6	Map
+67	2,094	Deepfin Point	Deepfin Point	Port Roberts		Nickel ore	6	Map
+67	2,094	Deepfin Point	Deepfin Point	Civitas illa Fortis		Nickel ore	5	Map
+70	2,078	Civitas illa Fortis	Civitas illa Fortis	Prifddinas		Clothes	7	Map
+30	2,068	Ardougne	Port Piscarilius	Ardougne		Furs	1	Map
+70	2,037	Aldarin	Aldarin	Deepfin Point		Machinery parts	7	Map
+40	2,026	Civitas illa Fortis	Civitas illa Fortis	Port Sarim		Sunbeam ale	2	Map
+40	2,025	Civitas illa Fortis	Civitas illa Fortis	Ardougne		Spices	3	Map
+76	2,025	Lunar Isle	Lunar Isle	Port Piscarilius		Fabrics	7	Map
+76	2,025	Port Piscarilius	Port Piscarilius	Lunar Isle		Fish	7	Map
+20	2,022	Port Piscarilius	Port Sarim	Port Piscarilius		Books	2	Map
+67	2,016	Port Tyras	Port Tyras	Deepfin Point		Planks	6	Map
+45	2,001	The Summer Shore	Musa Point	The Summer Shore		Pineapples	2	Map
+45	2,001	The Summer Shore	The Pandemonium	The Summer Shore		Gems	2	Map
+70	1,996	Prifddinas	Prifddinas	Civitas illa Fortis		Staffs	6	Map
+48	1,962	Port Khazard	Ruins of Unkah	Port Khazard		Angler outfit pieces	3	Map
+70	1,956	Deepfin Point	Deepfin Point	Aldarin		Lead ore	6	Map
+67	1,956	Land's End	Land's End	Deepfin Point		Logs	5	Map
+67	1,954	Deepfin Point	Port Tyras	Deepfin Point		Logs	6	Map
+75	1,935	Etceteria	Etceteria	Piscatoris		Flax	8	Map
+75	1,935	Rellekka	Rellekka	Piscatoris		Furs	8	Map
+38	1,926	Port Khazard	Civitas illa Fortis	Port Khazard		Huasca	3	Map
+58	1,907	Red Rock	Red Rock	Port Khazard		Planks	3	Map
+67	1,898	Aldarin	Aldarin	Deepfin Point		Pickaxes	6	Map
+48	1,885	Ruins of Unkah	Port Khazard	Ruins of Unkah		Ship parts	2	Map
+70	1,875	Deepfin Point	Deepfin Point	Port Tyras		Coal	6	Map
+45	1,866	Ardougne	Ardougne	The Summer Shore		Jewellery	2	Map
+52	1,851	Ruins of Unkah	Red Rock	Ruins of Unkah		Planks	3	Map
+75	1,846	Prifddinas	Prifddinas	Port Roberts		Staffs	7	Map
+55	1,840	Red Rock	Red Rock	Port Sarim		Fish	3	Map
+67	1,819	Deepfin Point	Deepfin Point	Port Tyras		Mithril ore	6	Map
+67	1,819	Deepfin Point	Deepfin Point	Aldarin		Adamantite ore	5	Map
+67	1,819	Port Roberts	Port Roberts	Deepfin Point		Planks	5	Map
+52	1,805	Red Rock	Red Rock	Catherby		Jewellery	3	Map
+80	1,760	Lunar Isle	Lunar Isle	Piscatoris		Potions	8	Map
+46	1,751	Corsair Cove	Corsair Cove	Aldarin		Daggers	3	Map
+65	1,738	Rellekka	Etceteria	Rellekka		Teak logs	6	Map
+52	1,736	Ardougne	Ardougne	Red Rock		Protective clothing	4	Map
+52	1,736	Red Rock	Red Rock	Ardougne		Red coral	4	Map
+55	1,710	The Summer Shore	The Summer Shore	Void Knights' Outpost		Spears	3	Map
+50	1,710	The Summer Shore	Void Knights' Outpost	The Summer Shore		Javelins	3	Map
+55	1,703	Port Roberts	Port Roberts	Port Piscarilius		Jewellery	3	Map
+70	1,671	Prifddinas	Prifddinas	Port Roberts		Logs	7	Map
+48	1,655	Ruins of Unkah	The Summer Shore	Ruins of Unkah		Coral	3	Map
+40	1,628	Corsair Cove	Corsair Cove	Port Piscarilius		Jewellery	2	Map
+68	1,620	Port Tyras	Port Tyras	Port Roberts		Bows	6	Map
+50	1,619	Port Piscarilius	Port Roberts	Port Piscarilius		Gin	3	Map
+52	1,597	Brimhaven	Brimhaven	Red Rock		Karambwans	3	Map
+65	1,581	Etceteria	Rellekka	Etceteria		Iron ore	5	Map
+48	1,577	The Summer Shore	Ruins of Unkah	The Summer Shore		Rope	2	Map
+76	1,575	Lunar Isle	Lunar Isle	Piscatoris		Fabrics	8	Map
+52	1,574	Aldarin	Aldarin	Civitas illa Fortis		Gems	4	Map
+50	1,574	Void Knights' Outpost	Void Knights' Outpost	Catherby		Arrowtips	3	Map
+66	1,542	Port Tyras	Port Tyras	Port Roberts		Furs	5	Map
+52	1,528	Civitas illa Fortis	Civitas illa Fortis	Aldarin		Furs	3	Map
+50	1,527	Aldarin	Aldarin	Port Roberts		Wine	3	Map
+50	1,527	Port Roberts	Land's End	Port Roberts		Seeds	3	Map
+50	1,527	Land's End	Port Roberts	Land's End		Wine	3	Map
+56	1,509	Ruins of Unkah	Ruins of Unkah	The Summer Shore		Cacti	4	Map
+45	1,462	The Summer Shore	The Summer Shore	Port Khazard		Crab paste	2	Map
+67	1,441	Port Tyras	Deepfin Point	Port Tyras		Ores	5	Map
+40	1,440	Corsair Cove	Brimhaven	Corsair Cove		Rum	3	Map
+75	1,440	Prifddinas	Prifddinas	Port Tyras		Ores	8	Map
+68	1,423	Etceteria	Etceteria	Neitiznot		Mahogany logs	6	Map
+48	1,386	Ruins of Unkah	Port Sarim	Ruins of Unkah		Runes	3	Map
+72	1,386	Rellekka	Rellekka	Neitiznot		Sand	6	Map
+45	1,347	The Summer Shore	The Summer Shore	Port Sarim		Camphor logs	3	Map
+52	1,319	Red Rock	Red Rock	Port Khazard		Red coral	3	Map
+52	1,319	Red Rock	Red Rock	Port Sarim		Red coral	4	Map
+40	1,309	The Pandemonium	Corsair Cove	The Pandemonium		Gold bars	3	Map
+40	1,309	Corsair Cove	The Pandemonium	Corsair Cove		Ship parts	3	Map
+50	1,295	Ruins of Unkah	Ruins of Unkah	Brimhaven		Sandstone	4	Map
+50	1,295	Void Knights' Outpost	Void Knights' Outpost	Port Sarim		Runes	4	Map
+46	1,270	Civitas illa Fortis	Civitas illa Fortis	Aldarin		Platebodies	3	Map
+68	1,265	Rellekka	Rellekka	Neitiznot		Coal	5	Map
+52	1,250	Void Knights' Outpost	Red Rock	Void Knights' Outpost		Herbs	4	Map
+52	1,250	The Summer Shore	The Summer Shore	The Pandemonium		Sea shells	3	Map
+40	1,246	Brimhaven	Corsair Cove	Brimhaven		Gems	2	Map
+46	1,231	Aldarin	Aldarin	Civitas illa Fortis		Fruit	2	Map
+50	1,226	The Summer Shore	The Summer Shore	Void Knights' Outpost		Coral	4	Map
+70	1,221	Port Tyras	Port Tyras	Prifddinas		Logs	7	Map
+40	1,216	Corsair Cove	Corsair Cove	Civitas illa Fortis		Books	2	Map
+50	1,204	Ardougne	Ardougne	Void Knights' Outpost		Platebodies	3	Map
+72	1,182	Etceteria	Etceteria	Jatizso		Flax	7	Map
+50	1,180	Void Knights' Outpost	Void Knights' Outpost	The Summer Shore		Pest remains	3	Map
+55	1,174	Land's End	Land's End	Port Roberts		Meat	4	Map
+55	1,174	Port Piscarilius	Port Piscarilius	Port Roberts		Jewellery	3	Map
+55	1,174	Port Roberts	Port Roberts	Land's End		Secret things	4	Map
+52	1,157	Red Rock	Void Knights' Outpost	Red Rock		Runes	3	Map
+44	1,147	Civitas illa Fortis	Civitas illa Fortis	Sunset Coast		Maces	3	Map
+72	1,141	Port Tyras	Port Tyras	Prifddinas		Halberds	6	Map
+70	1,141	Prifddinas	Prifddinas	Port Tyras		Fabrics	6	Map
+48	1,116	Ruins of Unkah	Ruins of Unkah	Ardougne		Silk	3	Map
+48	1,116	Ruins of Unkah	Ruins of Unkah	Catherby		Silk	2	Map
+68	1,107	Rellekka	Rellekka	Jatizso		Logs	5	Map
+50	1,088	Ruins of Unkah	Ruins of Unkah	Void Knights' Outpost		Granite	4	Map
+25	1,078	Catherby	Catherby	Port Piscarilius		Honey	1	Map
+50	1,064	Port Roberts	Civitas illa Fortis	Port Roberts		Antelope fur	4	Map
+50	1,064	Civitas illa Fortis	Port Roberts	Civitas illa Fortis		Tokens	4	Map
+30	1,051	Ardougne	Ardougne	Port Piscarilius		Wine	2	Map
+38	1,046	Ardougne	Ardougne	Civitas illa Fortis		Historical artefacts	3	Map
+54	1,041	The Summer Shore	The Summer Shore	Ruins of Unkah		Fish	4	Map
+60	1,034	Void Knights' Outpost	Void Knights' Outpost	Red Rock		Fish	5	Map
+50	1,019	Void Knights' Outpost	Corsair Cove	Void Knights' Outpost		Potions	4	Map
+50	1,018	Aldarin	Aldarin	Void Knights' Outpost		Potions	4	Map
+52	1,018	Void Knights' Outpost	Void Knights' Outpost	Port Khazard		Arrowtips	4	Map
+20	1,011	Port Sarim	Port Sarim	Port Piscarilius		Books	2	Map
+45	1,001	Musa Point	Musa Point	The Summer Shore		Bananas	2	Map
+45	1,001	The Summer Shore	The Summer Shore	The Pandemonium		Coral	2	Map
+20	997	Port Piscarilius	Port Piscarilius	Port Sarim		Books	1	Map
+20	990	Port Piscarilius	Port Piscarilius	Musa Point		High importance	2	Map
+68	988	Etceteria	Etceteria	Jatizso		Fish	5	Map
+48	982	Port Khazard	Port Khazard	Ruins of Unkah		Ship parts	3	Map
+70	978	Rellekka	Rellekka	Etceteria		Warhammers	7	Map
+70	977	Etceteria	Etceteria	Rellekka		Teak logs	7	Map
+30	977	Port Khazard	Port Khazard	Port Piscarilius		Platebodies	2	Map
+30	960	Land's End	Land's End	Port Khazard		Chainbodies	1	Map
+38	945	Brimhaven	Brimhaven	Civitas illa Fortis		Pineapples	3	Map
+38	945	Port Khazard	Port Khazard	Civitas illa Fortis		Pineapples	2	Map
+52	926	Ruins of Unkah	Ruins of Unkah	Red Rock		Granite	3	Map
+50	926	Corsair Cove	Void Knights' Outpost	Corsair Cove		Arrowtips	3	Map
+40	909	Musa Point	Musa Point	Corsair Cove		Peg legs	2	Map
+38	908	Civitas illa Fortis	Port Piscarilius	Civitas illa Fortis		Vegetables	3	Map
+54	880	Ruins of Unkah	Ruins of Unkah	Port Sarim		Kebabs	4	Map
+40	872	Port Khazard	Corsair Cove	Port Khazard		Vodka	2	Map
+40	872	Corsair Cove	Port Khazard	Corsair Cove		Platebodies	2	Map
+65	870	Rellekka	Rellekka	Etceteria		Fish	6	Map
+65	869	Etceteria	Etceteria	Rellekka		Fish	6	Map
+50	856	Port Roberts	Port Roberts	Port Piscarilius		Cannonballs	4	Map
+50	810	Land's End	Land's End	Port Roberts		Berries	4	Map
+50	810	Port Piscarilius	Port Piscarilius	Port Roberts		Fish	3	Map
+50	810	Port Roberts	Port Roberts	Land's End		Ores	4	Map
+46	808	Brimhaven	Brimhaven	Corsair Cove		Beer	3	Map
+48	789	Ruins of Unkah	Ruins of Unkah	The Summer Shore		Sandstone	2	Map
+48	789	The Summer Shore	The Summer Shore	Ruins of Unkah		Calquat	2	Map
+42	788	Corsair Cove	Cairn Isle	Corsair Cove		Gems	3	Map
+55	772	Civitas illa Fortis	Civitas illa Fortis	Port Roberts		Silk	4	Map
+30	755	The Pandemonium	Port Khazard	The Pandemonium		Swamp paste	1	Map
+30	738	Port Khazard	Port Sarim	Port Khazard		Swamp paste	2	Map
+40	720	Brimhaven	Brimhaven	Corsair Cove		Swords	3	Map
+40	720	Corsair Cove	Corsair Cove	Brimhaven		Jewellery	3	Map
+30	705	Port Sarim	Port Khazard	Port Sarim		Swords	1	Map
+55	705	Port Roberts	Port Roberts	Civitas illa Fortis		Ship parts	3	Map
+48	693	Ruins of Unkah	Ruins of Unkah	Port Sarim		Cacti	3	Map
+48	693	The Pandemonium	Ruins of Unkah	The Pandemonium		Granite	3	Map
+42	681	The Pandemonium	The Pandemonium	Cairn Isle		Secret stuff	3	Map
+55	670	Corsair Cove	Corsair Cove	Void Knights' Outpost		Wrath runes	3	Map
+40	655	Corsair Cove	Corsair Cove	The Pandemonium		Spices	3	Map
+48	655	Port Sarim	Port Sarim	Ruins of Unkah		Runes	2	Map
+40	655	The Pandemonium	The Pandemonium	Corsair Cove		Scimitars	3	Map
+28	631	Ardougne	Port Sarim	Ardougne		Runes	2	Map
+52	625	Red Rock	Red Rock	Void Knights' Outpost		Ores	4	Map
+52	625	Void Knights' Outpost	Void Knights' Outpost	Red Rock		Runes	4	Map
+48	616	Ruins of Unkah	The Pandemonium	Ruins of Unkah		Cocktails	2	Map
+28	601	Port Sarim	Ardougne	Port Sarim		Seeds	1	Map
+25	601	The Pandemonium	Brimhaven	The Pandemonium		Pineapples	2	Map
+25	601	Brimhaven	The Pandemonium	Brimhaven		Spices	2	Map
+20	592	The Pandemonium	Catherby	The Pandemonium		Arrowtips	1	Map
+20	591	Catherby	The Pandemonium	Catherby		Coconuts	1	Map
+20	578	Port Sarim	Catherby	Port Sarim		Honey	1	Map
+20	578	Catherby	Port Sarim	Catherby		Bait	1	Map
+45	577	Corsair Cove	Corsair Cove	Port Khazard		Gunpowder	3	Map
+45	577	Port Khazard	Port Khazard	Corsair Cove		Khali brews	3	Map
+25	554	Port Sarim	Brimhaven	Port Sarim		Nothing sinister	2	Map
+30	541	Musa Point	Port Khazard	Musa Point		Secret stuff	2	Map
+50	509	Corsair Cove	Corsair Cove	Void Knights' Outpost		Dragonhide	4	Map
+15	506	Port Piscarilius	Land's End	Port Piscarilius		Planks	1	Map
+15	506	Land's End	Port Piscarilius	Land's End		Fish	1	Map
+50	486	Civitas illa Fortis	Civitas illa Fortis	Port Roberts		Gems	3	Map
+50	486	Port Roberts	Port Roberts	Civitas illa Fortis		Spices	3	Map
+40	468	Corsair Cove	Corsair Cove	Port Khazard		Scimitars	3	Map
+40	468	Port Khazard	Port Khazard	Corsair Cove		Daggers	3	Map
+38	453	Civitas illa Fortis	Civitas illa Fortis	Port Piscarilius		Antelope meat	3	Map
+38	436	Civitas illa Fortis	Civitas illa Fortis	Port Piscarilius		Jewellery	2	Map
+46	424	Aldarin	Sunset Coast	Aldarin		Furs	2	Map
+38	417	Port Khazard	Port Khazard	Port Sarim		Fish	2	Map
+28	416	Musa Point	Ardougne	Musa Point		Silk	1	Map
+20	413	Musa Point	Catherby	Musa Point		Honey	2	Map
+20	413	Catherby	Musa Point	Catherby		Bananas	2	Map
+30	394	Catherby	Port Khazard	Catherby		Glassmaking supplies	2	Map
+15	385	Port Piscarilius	Hosidius	Port Piscarilius		Seeds	2	Map
+30	377	The Pandemonium	The Pandemonium	Port Khazard		Kyatt teeth	1	Map
+36	371	Musa Point	Entrana	Musa Point		Beer glasses	2	Map
+30	369	Port Khazard	Port Khazard	Port Sarim		Swords	2	Map
+30	361	Port Khazard	Catherby	Port Khazard		Secret stuff	1	Map
+42	358	Corsair Cove	Corsair Cove	Cairn Isle		Gold bars	2	Map
+30	353	Port Sarim	Port Sarim	Port Khazard		Swamp paste	1	Map
+50	347	Aldarin	Aldarin	Sunset Coast		Wine	4	Map
+48	347	Ruins of Unkah	Ruins of Unkah	The Pandemonium		Cacti	3	Map
+25	339	Musa Point	Brimhaven	Musa Point		Mahogany logs	1	Map
+25	339	Brimhaven	Musa Point	Brimhaven		Fish	1	Map
+36	331	Port Khazard	Port Khazard	Ardougne		Sand	3	Map
+20	330	Port Piscarilius	Port Piscarilius	Land's End		Meat	2	Map
+26	323	Catherby	Catherby	Port Sarim		Beer	1	Map
+28	323	Port Sarim	Port Sarim	Catherby		Potatoes	1	Map
+20	317	Land's End	Land's End	Port Piscarilius		Furs	1	Map
+28	308	Catherby	Ardougne	Catherby		Arrowtips	2	Map
+48	308	The Pandemonium	The Pandemonium	Ruins of Unkah		Cocktails	2	Map
+32	304	The Pandemonium	The Pandemonium	Brimhaven		Cacti	1	Map
+28	300	Port Sarim	Port Sarim	Ardougne		Salamanders	1	Map
+25	300	The Pandemonium	The Pandemonium	Brimhaven		Jewellery	2	Map
+20	296	Catherby	Catherby	The Pandemonium		Wax	1	Map
+20	296	The Pandemonium	The Pandemonium	Catherby		Grog	1	Map
+20	289	Catherby	Catherby	Port Sarim		Flax	1	Map
+20	289	Port Sarim	Port Sarim	Catherby		Bait	1	Map
+25	285	Brimhaven	Brimhaven	The Pandemonium		Meat	1	Map
+25	277	Brimhaven	Brimhaven	Port Sarim		Amulets	2	Map
+28	277	Ardougne	Catherby	Ardougne		Arrowtips	1	Map
+15	264	Port Piscarilius	Port Piscarilius	Land's End		Fish	2	Map
+25	262	Port Sarim	Port Sarim	Brimhaven		Vodka	1	Map
+36	260	Catherby	Entrana	Catherby		Vials	2	Map
+36	260	Port Khazard	Port Khazard	Entrana		Sand	3	Map
+15	253	Land's End	Land's End	Port Piscarilius		Planks	1	Map
+30	246	Port Khazard	Brimhaven	Port Khazard		Herbs	2	Map
+30	246	Brimhaven	Port Khazard	Brimhaven		Iron bars	2	Map
+38	241	Catherby	Catherby	Port Khazard		Coal	3	Map
+25	231	Catherby	Brimhaven	Catherby		Karambwans	1	Map
+25	231	Brimhaven	Catherby	Brimhaven		Compost	1	Map
+28	223	Musa Point	Musa Point	Ardougne		Bananas	2	Map
+46	212	Aldarin	Aldarin	Sunset Coast		Beer	2	Map
+20	206	Catherby	Catherby	Musa Point		Lobsters	2	Map
+30	197	Catherby	Catherby	Port Khazard		Bows	2	Map
+32	197	Musa Point	Musa Point	Brimhaven		Silver ore	2	Map
+20	193	Musa Point	Musa Point	Catherby		Coconuts	1	Map
+15	193	Port Piscarilius	Port Piscarilius	Hosidius		Fish	2	Map
+25	185	Brimhaven	Brimhaven	Musa Point		Cocktails	2	Map
+36	185	Musa Point	Musa Point	Entrana		Bananas	2	Map
+5	183	Land's End	Hosidius	Land's End		Vegetables	1	Map
+32	180	Brimhaven	Brimhaven	Musa Point		Meat	1	Map
+30	180	Port Khazard	Port Khazard	Catherby		Gold ore	1	Map
+10	178	The Pandemonium	Musa Point	The Pandemonium		Rum	1	Map
+10	178	Musa Point	The Pandemonium	Musa Point		Eye patches	1	Map
+25	169	Musa Point	Musa Point	Brimhaven		Rum	1	Map
+34	164	Ardougne	Ardougne	Catherby		Seeds	2	Map
+30	164	Port Khazard	Ardougne	Port Khazard		Platebodies	1	Map
+30	164	Ardougne	Port Khazard	Ardougne		Fish	1	Map
+10	158	Port Sarim	Musa Point	Port Sarim		Logs	1	Map
+10	158	Musa Point	Port Sarim	Musa Point		Bananas	1	Map
+38	157	Brimhaven	Brimhaven	Port Khazard		Fruit	3	Map
+1	155	The Pandemonium	Port Sarim	The Pandemonium		Steel bars	1	Map
+1	155	Port Sarim	The Pandemonium	Port Sarim		Spices	1	Map
+30	154	Port Khazard	Port Khazard	Ardougne		Fish	2	Map
+32	147	Catherby	Catherby	Ardougne		Poison	1	Map
+28	139	Ardougne	Ardougne	Catherby		Furs	1	Map
+28	139	Ardougne	Brimhaven	Ardougne		Gold ore	1	Map
+25	131	Brimhaven	Brimhaven	Catherby		Pineapples	2	Map
+36	130	Catherby	Catherby	Entrana		Barley	2	Map
+28	130	The Pandemonium	The Pandemonium	Ardougne		Sand	1	Map
+36	120	Ardougne	Ardougne	Brimhaven		Beer	3	Map
+25	116	Catherby	Catherby	Brimhaven		Fish	1	Map
+18	110	Musa Point	Musa Point	The Pandemonium		Rum	2	Map
+30	107	Brimhaven	Brimhaven	Port Khazard		Spears	1	Map
+30	99	Ardougne	Ardougne	Port Khazard		Bread	2	Map
+18	99	Port Sarim	Port Sarim	Musa Point		Fish	2	Map
+18	99	The Pandemonium	The Pandemonium	Musa Point		Ship parts	1	Map
+5	91	Land's End	Land's End	Hosidius		Rope	1	Map
+5	91	Land's End	Land's End	Hosidius		Xerician fabrics	1	Map
+10	89	Musa Point	Musa Point	The Pandemonium		Bananas	1	Map
+10	89	The Pandemonium	The Pandemonium	Musa Point		Rotten bananas	1	Map
+15	88	Musa Point	Musa Point	Port Sarim		Logs	1	Map
+10	79	Musa Point	Musa Point	Port Sarim		Coconuts	1	Map
+10	79	Port Sarim	Port Sarim	Musa Point		Logs	1	Map
+1	78	Port Sarim	Port Sarim	The Pandemonium		Platebodies	1	Map
+1	78	Port Sarim	Port Sarim	The Pandemonium		Battleaxes	1	Map
+1	78	The Pandemonium	The Pandemonium	Port Sarim		Jewellery	1	Map
+1	78	The Pandemonium	The Pandemonium	Port Sarim		Fish	1	Map
+28	69	Ardougne	Ardougne	Brimhaven		Spices	1	Map
+28	69	Brimhaven	Brimhaven	Ardougne		Fish	1	Map
+28	69	Catherby	Catherby	Ardougne		Fish	2	Map
+56	Unknown	Red Rock	Port Roberts	Red Rock		Spices	4	Map
+70	Unknown	Port Tyras	Port Tyras	Red Rock		Ship parts	6	Map
+60	Unknown	Red Rock	Red Rock	Land's End		Fish	4	Map
+52	Unknown	Ardougne	Red Rock	Ardougne		Red coral	4	Map
+52	Unknown	Brimhaven	Red Rock	Brimhaven		Machinery parts	4	Map
+52	Unknown	Civitas illa Fortis	Red Rock	Civitas illa Fortis		Red coral	4	Map
+60	Unknown	Ruins of Unkah	Ruins of Unkah	Red Rock		Fish	4	Map
+
