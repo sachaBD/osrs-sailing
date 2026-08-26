@@ -23,6 +23,49 @@ function portDistance(a, b) {
   return Math.hypot(p[0] - q[0], p[1] - q[1]);
 }
 
+/* Default width of the "on the way" corridor, in game tiles; adjustable in the
+   trip panel. The whole map spans about 1,700 tiles. */
+const ROUTE_CORRIDOR = 120;
+
+/** Shortest distance from point p to the segment a-b. */
+function distanceToSegment(p, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+  // how far along the segment the nearest point lies, clamped to its ends
+  let t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+
+/** Ports the route sails past without stopping -> {name: {dist, leg}}. */
+function portsNearRoute(stops, corridor) {
+  const limit = corridor || state.corridor || ROUTE_CORRIDOR;
+  const stopping = new Set(stops.map((s) => s.port));
+  const legs = [];
+  for (let i = 1; i < stops.length; i++) {
+    const a = portXY(stops[i - 1].port);
+    const b = portXY(stops[i].port);
+    if (a && b) legs.push([a, b, i]);
+  }
+
+  const near = new Map();
+  for (const name of Object.keys(LOCATIONS)) {
+    if (stopping.has(name)) continue;
+    const p = portXY(name);
+    if (!p) continue;
+    let best = Infinity;
+    let bestLeg = null;
+    for (const [a, b, i] of legs) {
+      const d = distanceToSegment(p, a, b);
+      if (d < best) { best = d; bestLeg = i; }
+    }
+    if (best <= limit) near.set(name, { dist: Math.round(best), leg: bestLeg });
+  }
+  return near;
+}
+
 function tripTasks() {
   return state.trip.map((id) => TASK_BY_ID.get(id)).filter(Boolean);
 }
@@ -120,6 +163,22 @@ function renderTrip() {
   startSel.innerHTML = '<option value="">Start anywhere</option>' +
     ports.map((p) => '<option value="' + p + '"' +
       (p === state.tripStart ? ' selected' : '') + '>' + p + '</option>').join('');
+
+  const near = portsNearRoute(stops);
+  const passing = document.querySelector('#trip-passing');
+  passing.toggleAttribute('hidden', near.size === 0);
+  if (near.size) {
+    const items = [...near.entries()].sort((a, b) => a[1].dist - b[1].dist).map(([name, v]) => {
+      const board = (LOCATIONS[name] || {}).notice_board === 'yes';
+      return '<span class="pass' + (board ? ' has-board' : '') + '" title="' +
+        v.dist + ' tiles off leg ' + v.leg +
+        (board ? ', has a notice board' : ', no notice board') + '">' +
+        name + ' <i>' + v.dist + '</i>' + (board ? ' &#10003;' : '') + '</span>';
+    });
+    passing.innerHTML = '<b>Sailing past</b> ' + items.join('') +
+      '<span class="muted">&#10003; = notice board. Distances are to the ' +
+      'straight line between stops, which ignores land.</span>';
+  }
 
   document.querySelector('#trip-stops').innerHTML = stops.map((s, i) => {
     const bits = [];

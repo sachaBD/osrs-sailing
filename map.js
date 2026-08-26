@@ -69,6 +69,7 @@ function drawOverlay(rows) {
 
   const trip = currentTrip();
   const onTrip = new Set(trip.stops.map((s) => s.port));
+  const nearRoute = portsNearRoute(trip.stops);
   const parts = [];
 
   // Background routes are a hairball at full dataset size, so they are opt-in
@@ -117,11 +118,13 @@ function drawOverlay(rows) {
       .map((s, i) => (s.port === name ? i + 1 : 0)).filter(Boolean);
     const cls = ['marker'];
     // with a trip on screen every other port is background, filtered or not
+    const near = nearRoute.get(name);
     if (onTrip.has(name)) cls.push('on-trip');
+    else if (near) cls.push('near-route');
     else if (trip.stops.length || !touched.has(name)) cls.push('dim');
     if (state.port.has(name)) cls.push('picked');
     // labels only where they earn their place, else 30 names collide
-    if (onTrip.has(name) || state.port.has(name)) cls.push('labelled');
+    if (onTrip.has(name) || near || state.port.has(name)) cls.push('labelled');
 
     const badge = stopNums.length
       ? '<g class="stop-badge"><circle r="' + (stopNums.length > 1 ? 15 : 11) + '"></circle>' +
@@ -134,7 +137,9 @@ function drawOverlay(rows) {
       '<circle class="dot" r="7"></circle>' + badge +
       '<text class="label" y="-14">' + name + '</text>' +
       '<title>' + name + ' - ' + meta.region +
-      (meta.dock_level ? ', dock level ' + meta.dock_level : '') + '</title></g>');
+      (meta.dock_level ? ', dock level ' + meta.dock_level : '') +
+      (near ? '\nsailing past: ' + near.dist + ' tiles off leg ' + near.leg : '') +
+      '</title></g>');
   }
   el.svg.innerHTML = parts.join('');
 }

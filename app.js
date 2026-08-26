@@ -25,6 +25,7 @@ const state = {
   trip: [],             // ordered task ids in the route builder
   tripStart: '',
   showAllRoutes: false,
+  corridor: 120,        // "sailing past" radius in game tiles
   scope: 'any',
   direction: '',
   minLevel: 1,
@@ -227,7 +228,7 @@ function render() {
    Defaults are omitted to keep links short. */
 const URL_STR = { q: '', board: '', direction: '', scope: 'any',
                   sortKey: 'xp', sortDir: 'desc' };
-const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null };
+const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120 };
 const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest'];
 const URL_SET = ['from', 'to', 'region', 'ocean', 'port'];
 const SEP = '~';   // port names contain spaces, commas and apostrophes; ~ they do not
@@ -301,6 +302,7 @@ function syncControls() {
   $('#f-recover').checked = state.recoverAtOrigin;
   $('#f-board-dest').checked = state.boardAtDest;
   $('#f-all-routes').checked = state.showAllRoutes;
+  $('#trip-corridor').value = state.corridor;
   document.querySelectorAll('.ms').forEach((ms) => ms._apply());
 }
 
@@ -340,6 +342,11 @@ $('#tbody').addEventListener('click', (e) => {
 });
 
 $('#trip-clear').addEventListener('click', clearTrip);
+$('#trip-corridor').addEventListener('input', (e) => {
+  state.corridor = Number(e.target.value) || 120;
+  render();
+});
+
 $('#trip-start').addEventListener('change', (e) => {
   state.tripStart = e.target.value;
   render();
@@ -361,7 +368,7 @@ document.querySelectorAll('th[data-key]').forEach((th) => {
 $('#reset').addEventListener('click', () => {
   Object.assign(state, {
     q: '', board: '', direction: '', scope: 'any',
-    minLevel: 1, maxLevel: 99, minXp: null, maxXp: null,
+    minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120,
     hideUnknownXp: false, recoverAtOrigin: false, boardAtDest: false,
   });
   document.querySelectorAll('.filters input, .filters select').forEach((el) => {

@@ -72,9 +72,12 @@
     <div id="trip-summary"></div>
     <label for="trip-start">Start</label>
     <select id="trip-start"></select>
+    <label for="trip-corridor" title="How close a port must pass to count">Passing within</label>
+    <input id="trip-corridor" type="number" min="0" max="600" step="20" value="120">
     <button id="trip-clear">Clear trip</button>
   </div>
   <ol id="trip-stops"></ol>
+  <div id="trip-passing" hidden></div>
 </section>
 
 <div id="stats"></div>

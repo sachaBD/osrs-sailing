@@ -234,3 +234,21 @@ tr.in-trip .trip-btn { color: var(--accent-2); border-color: var(--accent-2); }
 th.unsortable { cursor: default; }
 th.unsortable:hover { color: var(--muted); }
 label.inline { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+
+/* ports the route sails past without stopping */
+.marker.near-route .dot {
+  fill: #2b2318; stroke: var(--accent); stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.marker.near-route .label { fill: var(--accent); }
+#trip-passing {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  padding: 0 22px 12px; font-size: 12px; color: var(--muted);
+}
+#trip-passing b { color: var(--accent); font-weight: 600; }
+#trip-passing .pass {
+  border: 1px solid var(--line); border-radius: 10px;
+  padding: 2px 9px; color: var(--muted);
+}
+#trip-passing .pass.has-board { border-color: var(--accent); color: var(--text); }
+#trip-passing .pass i { color: var(--muted); font-style: normal; opacity: .7; }

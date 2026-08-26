@@ -219,6 +219,21 @@ def main():
         page.goto(page.url, wait_until='networkidle')
         c.check('trip survives a reload', page.locator('#trip-stops li').count() == stops)
 
+        # ports the route sails past, and the corridor control
+        near = page.locator('.marker.near-route').count()
+        c.check('route highlights ports it sails past', near > 0, f'{near} ports')
+        c.check('passing list is shown', page.is_visible('#trip-passing'))
+        page.fill('#trip-corridor', '20')
+        page.wait_for_timeout(150)
+        tight = page.locator('.marker.near-route').count()
+        c.check('a tighter corridor highlights fewer', tight < near, f'{tight} at 20 tiles')
+        page.fill('#trip-corridor', '400')
+        page.wait_for_timeout(150)
+        wide = page.locator('.marker.near-route').count()
+        c.check('a wider corridor highlights more', wide > near, f'{wide} at 400 tiles')
+        page.fill('#trip-corridor', '120')
+        page.wait_for_timeout(120)
+
         page.click('#trip-clear')
         page.wait_for_timeout(100)
         c.check('clear trip empties the panel', not page.is_visible('#trip-panel'))
