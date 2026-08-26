@@ -6,6 +6,8 @@ const oceansOf = (loc) => (LOCATIONS[loc] || {}).oceans || [];
 // A shipwright is what lets you recover a capsized or parked boat.
 const canRecoverAt = (loc) => (LOCATIONS[loc] || {}).shipwright === 'yes';
 const dockLevelOf = (loc) => Number((LOCATIONS[loc] || {}).dock_level) || 0;
+// Not every port has a notice board, so you can't always pick up a follow-up task.
+const hasBoardAt = (loc) => (LOCATIONS[loc] || {}).notice_board === 'yes';
 
 // The three ports a task touches, in the order the "Match on" scope names them.
 const legsOf = (t) => ({ board: t.noticeBoard, from: t.from, to: t.to });
@@ -19,6 +21,7 @@ const state = {
   to: new Set(),
   region: new Set(),
   ocean: new Set(),
+  port: new Set(),      // set by clicking markers on the map
   scope: 'any',
   cargo: '',
   direction: '',
@@ -28,6 +31,8 @@ const state = {
   maxXp: null,
   hideUnknownXp: false,
   recoverAtDest: false,
+  boardAtDest: false,
+  mapOpen: false,
 };
 
 const $ = (s) => document.querySelector(s);
@@ -85,6 +90,10 @@ function multiSelect(rootId, values, placeholder, key) {
     render();
   });
 
+  root._apply = () => {
+    menu.querySelectorAll('input').forEach((i) => { i.checked = selected.has(i.value); });
+    syncLabel();
+  };
   root._reset = () => {
     selected.clear();
     menu.querySelectorAll('input').forEach((i) => { i.checked = false; });
@@ -124,7 +133,9 @@ function filtered() {
     if (state.cargo && t.cargo !== state.cargo) return false;
     if (!matchesScope(t, state.region, (l) => [regionOf(l)])) return false;
     if (!matchesScope(t, state.ocean, oceansOf)) return false;
+    if (!matchesScope(t, state.port, (l) => [l])) return false;
     if (state.recoverAtDest && !canRecoverAt(t.to)) return false;
+    if (state.boardAtDest && !hasBoardAt(t.to)) return false;
     if (state.direction && t.direction !== state.direction) return false;
     // unknown XP can't satisfy a numeric bound, so an XP filter excludes it
     if ((state.hideUnknownXp || xpBounded) && t.xp === null) return false;
@@ -143,6 +154,7 @@ const DERIVED = {
   fromRegion: (r) => regionOf(r.from),
   toRegion: (r) => regionOf(r.to),
   recover: (r) => (canRecoverAt(r.to) ? 1 : 0),
+  board: (r) => (hasBoardAt(r.to) ? 1 : 0),
   destDockLevel: (r) => dockLevelOf(r.to),
 };
 
@@ -162,8 +174,11 @@ function sorted(rows) {
   });
 }
 
+let lastRows = [];
+
 function render() {
   const rows = sorted(filtered());
+  lastRows = rows;
   const known = rows.filter((r) => r.xp !== null);
   const totalXp = known.reduce((s, r) => s + r.xp, 0);
 
@@ -185,16 +200,77 @@ function render() {
       <td class="mid">${canRecoverAt(t.to)
         ? '<span class="yes" title="Shipwright at ' + t.to + '">✔</span>'
         : '<span class="no" title="No shipwright at ' + t.to + '">✘</span>'}</td>
+      <td class="mid">${hasBoardAt(t.to)
+        ? '<span class="yes" title="Notice board at ' + t.to + '">✔</span>'
+        : '<span class="no" title="No notice board at ' + t.to + '">✘</span>'}</td>
       <td>${t.cargo}</td>
       <td class="num">${t.qty}</td>
-      <td class="num">${t.xpPerQty === null ? '<span class="unknown">?</span>' : t.xpPerQty.toLocaleString()}</td>
       <td><span class="tag ${t.direction}">${t.direction}</span></td>
     </tr>`).join('') || '<tr><td colspan="12" class="empty">No tasks match these filters.</td></tr>';
+
+  stateToUrl();
+  if (view.ready) drawOverlay(rows);
+  document.querySelector('#map-selection').textContent =
+    state.port.size ? [...state.port].join(', ') : 'none';
 
   document.querySelectorAll('th[data-key]').forEach((th) => {
     th.classList.toggle('sorted', th.dataset.key === state.sortKey);
     th.dataset.dir = th.dataset.key === state.sortKey ? state.sortDir : '';
   });
+}
+
+/* ---- URL state ----
+   Every filter lives in the query string so a view can be bookmarked or shared.
+   Defaults are omitted to keep links short. */
+const URL_STR = { q: '', board: '', cargo: '', direction: '', scope: 'any',
+                  sortKey: 'xp', sortDir: 'desc' };
+const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null };
+const URL_BOOL = ['hideUnknownXp', 'recoverAtDest', 'boardAtDest'];
+const URL_SET = ['from', 'to', 'region', 'ocean', 'port'];
+const SEP = '~';   // port names contain spaces, commas and apostrophes; ~ they do not
+
+function stateToUrl() {
+  const p = new URLSearchParams();
+  for (const [k, d] of Object.entries(URL_STR)) if (state[k] !== d) p.set(k, state[k]);
+  for (const [k, d] of Object.entries(URL_NUM)) {
+    if (state[k] !== d && state[k] !== null) p.set(k, state[k]);
+  }
+  for (const k of URL_BOOL) if (state[k]) p.set(k, '1');
+  for (const k of URL_SET) if (state[k].size) p.set(k, [...state[k]].join(SEP));
+  if (state.mapOpen) p.set('map', '1');
+  const qs = p.toString();
+  history.replaceState(null, '', qs ? '?' + qs : location.pathname);
+}
+
+function urlToState() {
+  const p = new URLSearchParams(location.search);
+  for (const k of Object.keys(URL_STR)) if (p.has(k)) state[k] = p.get(k);
+  for (const k of Object.keys(URL_NUM)) {
+    if (p.has(k) && p.get(k) !== '') state[k] = Number(p.get(k));
+  }
+  for (const k of URL_BOOL) state[k] = p.get(k) === '1';
+  for (const k of URL_SET) {
+    state[k] = new Set(p.has(k) ? p.get(k).split(SEP).filter(Boolean) : []);
+  }
+  state.mapOpen = p.get('map') === '1';
+}
+
+/* Push state into the controls, for links opened from scratch. */
+function syncControls() {
+  const set = (sel, v) => { const e = $(sel); if (e) e.value = v; };
+  set('#f-q', state.q);
+  set('#f-board', state.board);
+  set('#f-cargo', state.cargo);
+  set('#f-direction', state.direction);
+  set('#f-scope', state.scope);
+  set('#f-min', state.minLevel === 1 ? '' : state.minLevel);
+  set('#f-max', state.maxLevel === 99 ? '' : state.maxLevel);
+  set('#f-xpmin', state.minXp === null ? '' : state.minXp);
+  set('#f-xpmax', state.maxXp === null ? '' : state.maxXp);
+  $('#f-unknown').checked = state.hideUnknownXp;
+  $('#f-recover').checked = state.recoverAtDest;
+  $('#f-board-dest').checked = state.boardAtDest;
+  document.querySelectorAll('.ms').forEach((ms) => ms._apply());
 }
 
 function bind(id, key, transform = (v) => v) {
@@ -220,6 +296,7 @@ bind('#f-direction', 'direction');
 bind('#f-scope', 'scope');
 bind('#f-unknown', 'hideUnknownXp');
 bind('#f-recover', 'recoverAtDest');
+bind('#f-board-dest', 'boardAtDest');
 bind('#f-min', 'minLevel', numOr(1));
 bind('#f-max', 'maxLevel', numOr(99));
 bind('#f-xpmin', 'minXp', numOr(null));
@@ -242,7 +319,7 @@ $('#reset').addEventListener('click', () => {
   Object.assign(state, {
     q: '', board: '', cargo: '', direction: '', scope: 'any',
     minLevel: 1, maxLevel: 99, minXp: null, maxXp: null,
-    hideUnknownXp: false, recoverAtDest: false,
+    hideUnknownXp: false, recoverAtDest: false, boardAtDest: false,
   });
   document.querySelectorAll('.filters input, .filters select').forEach((el) => {
     if (el.type === 'checkbox') el.checked = false;
@@ -250,14 +327,18 @@ $('#reset').addEventListener('click', () => {
   });
   $('#f-scope').value = 'any';
   document.querySelectorAll('.ms').forEach((ms) => ms._reset());
+  state.port.clear();
+  syncControls();
   render();
 });
 
 $('#export').addEventListener('click', () => {
   const rows = sorted(filtered());
   const cols = ['level', 'xp', 'noticeBoard', 'from', 'fromRegion', 'to', 'toRegion',
-                'cargo', 'qty', 'xpPerQty', 'direction', 'recover'];
-  const derived = { ...DERIVED, recover: (r) => (canRecoverAt(r.to) ? 'yes' : 'no') };
+                'cargo', 'qty', 'direction', 'recover', 'board'];
+  const derived = { ...DERIVED,
+    recover: (r) => (canRecoverAt(r.to) ? 'yes' : 'no'),
+    board: (r) => (hasBoardAt(r.to) ? 'yes' : 'no') };
   const csv = [cols.join(',')].concat(
     rows.map((r) => cols.map((c) => {
       const raw = derived[c] ? derived[c](r) : r[c];
@@ -273,4 +354,8 @@ $('#export').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+urlToState();
+syncControls();
+initMap();
+if (state.mapOpen) $('#map-toggle').click();
 render();

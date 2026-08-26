@@ -39,9 +39,32 @@
   <div class="field"><label for="f-xpmax">Max XP</label><input id="f-xpmax" type="number" min="0" step="100" placeholder="any"></div>
   <div class="field check"><input id="f-unknown" type="checkbox"><label for="f-unknown">Hide unknown XP</label></div>
   <div class="field check"><input id="f-recover" type="checkbox"><label for="f-recover" title="Only tasks ending at a port with a shipwright">Boat recovery at destination</label></div>
+  <div class="field check"><input id="f-board-dest" type="checkbox"><label for="f-board-dest" title="Only tasks ending at a port with a notice board">Task board at destination</label></div>
+  <button id="map-toggle">Show map</button>
   <button id="reset">Reset</button>
   <button id="export">Export CSV</button>
 </div>
+
+<section id="map-panel" hidden>
+  <div id="map-viewport">
+    <div id="map-layer">
+      <div id="map-tiles"></div>
+      <svg id="map-overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="map-controls">
+      <button id="map-in" title="Zoom in">+</button>
+      <button id="map-out" title="Zoom out">&minus;</button>
+      <button id="map-fit" title="Fit all ports">Fit</button>
+      <span id="map-zoom-label">100%</span>
+    </div>
+  </div>
+  <div id="map-legend">
+    <span>Click a port to filter by it (uses the <b>Match on</b> scope).</span>
+    <span>Selected: <b id="map-selection">none</b></span>
+    <button id="map-clear">Clear selection</button>
+    <span class="muted">Line thickness = tasks on that route. Map tiles &copy; OSRS Wiki.</span>
+  </div>
+</section>
 
 <div id="stats"></div>
 
@@ -57,9 +80,9 @@
       <th data-key="to" data-default="asc">Destination</th>
       <th data-key="toRegion" data-default="asc">Region</th>
       <th data-key="recover" title="Shipwright at the destination: can you recover your boat there?">Recover</th>
+      <th data-key="board" title="Notice board at the destination: can you pick up a new task there?">Board</th>
       <th data-key="cargo" data-default="asc">Cargo</th>
       <th data-key="qty">Qty</th>
-      <th data-key="xpPerQty">XP / unit</th>
       <th data-key="direction" data-default="asc">Dir</th>
     </tr>
   </thead>
@@ -68,6 +91,7 @@
 </div>
 
 <script src="data.js"></script>
+<script src="map.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

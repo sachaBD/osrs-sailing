@@ -28,7 +28,6 @@ def parse(path=SRC):
                 'qty': qty_v,
                 # every task either starts or ends at the board that advertises it
                 'direction': 'outbound' if board == src else 'inbound',
-                'xpPerQty': round(xp_v / qty_v, 1) if xp_v else None,
             })
     return rows
 

@@ -103,3 +103,61 @@ tbody tr:hover { background: #221d16; }
 .mid { text-align: center; }
 .yes { color: var(--accent-2); }
 .no { color: #7a5a52; }
+
+/* ---- map ---- */
+#map-panel { border-bottom: 1px solid var(--line); background: #12100c; }
+#map-viewport {
+  position: relative; height: 62vh; min-height: 340px;
+  overflow: hidden; cursor: grab; touch-action: none;
+  background: #0e1a24;
+}
+#map-viewport:active { cursor: grabbing; }
+#map-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; --inv: 1; }
+#map-tiles { position: absolute; top: 0; left: 0; }
+.map-tile {
+  position: absolute; image-rendering: pixelated;
+  user-select: none; -webkit-user-drag: none;
+}
+#map-overlay { position: absolute; top: 0; left: 0; overflow: visible; }
+
+.route {
+  stroke: var(--accent); opacity: .38;
+  stroke-linecap: round; vector-effect: non-scaling-stroke;
+  pointer-events: stroke;
+}
+.route:hover { opacity: .9; }
+
+.marker { cursor: pointer; }
+.marker .hit { fill: transparent; }
+.marker .dot {
+  fill: var(--accent); stroke: #17130d; stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transform: scale(var(--inv)); transform-origin: center;
+}
+.marker text {
+  fill: var(--text); font-size: 13px; text-anchor: middle;
+  paint-order: stroke; stroke: #12100c; stroke-width: 3px;
+  pointer-events: none; user-select: none;
+  transform: scale(var(--inv)); transform-origin: center;
+}
+.marker.dim .dot { fill: #6b5f4a; }
+.marker.dim text { opacity: .45; }
+.marker.picked .dot { fill: var(--accent-2); }
+.marker:hover .dot { fill: #fff0c4; }
+
+#map-controls {
+  position: absolute; top: 10px; right: 10px; z-index: 5;
+  display: flex; gap: 6px; align-items: center;
+  background: rgba(20,17,12,.85); border: 1px solid var(--line);
+  border-radius: 4px; padding: 5px 8px;
+}
+#map-controls button { align-self: auto; padding: 2px 9px; }
+#map-zoom-label { color: var(--muted); font-size: 12px; min-width: 40px; text-align: right; }
+
+#map-legend {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+  padding: 8px 22px; font-size: 12px; color: var(--muted);
+  border-top: 1px solid var(--line);
+}
+#map-legend b { color: var(--text); }
+#map-legend button { align-self: auto; padding: 3px 8px; font-size: 12px; }

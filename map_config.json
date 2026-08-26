@@ -1,0 +1,15 @@
+{
+  "_comment": [
+    "Map tile settings. EDIT ME.",
+    "tile_version goes stale when the wiki re-renders its maps; `make refresh` re-discovers it.",
+    "zooms: 0 = 256 game tiles per image (1px per game tile), each level up halves that.",
+    "  Adding zoom 2 costs ~32MB of tiles, so two levels is the sensible cap.",
+    "padding: game tiles of margin kept around the outermost port."
+  ],
+  "tile_version": "2026-08-12_a",
+  "tile_url": "https://maps.runescape.wiki/osrs/versions/{version}/tiles/rendered/{map_id}/{zoom}/{plane}_{x}_{y}.png",
+  "map_id": -1,
+  "plane": 0,
+  "zooms": [0, 1],
+  "padding": 64
+}

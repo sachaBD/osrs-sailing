@@ -9,6 +9,7 @@ values you edited by hand alone. Pass --apply to take the wiki's version.
 """
 import json, re, sys, urllib.parse, urllib.request
 import locations
+import mapdata
 
 OCEANS = ['Ardent Ocean', 'Unquiet Ocean', 'Eastern Ocean', 'Shrouded Ocean', 'Western Ocean',
           'Northern Ocean', 'Untamed Ocean', 'Forgotten Ocean', 'Sunset Ocean']
@@ -81,8 +82,29 @@ def parse_ocean(page):
     return out
 
 
+def refresh_tile_version():
+    """The wiki re-renders its maps periodically, which changes the version in
+    every tile URL. Scrape the current one off a page that embeds a map."""
+    url = 'https://oldschool.runescape.wiki/w/Ardent_Ocean'
+    html = urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30)
+    found = set(re.findall(r'maps\.runescape\.wiki/osrs/versions/([^/]+)/', html.read().decode('utf-8', 'replace')))
+    if not found:
+        print('  ?  tile version: none found on the page, leaving map_config.json alone')
+        return
+    latest = sorted(found)[-1]
+    cfg = mapdata.config()
+    if cfg['tile_version'] == latest:
+        print(f'  =  tile version: {latest} (unchanged)')
+        return
+    print(f'  ~  tile version: {cfg["tile_version"]} -> {latest}; '
+          f'run `make clean-tiles && make tiles` to re-download')
+    cfg['tile_version'] = latest
+    json.dump(cfg, open(mapdata.CONFIG, 'w'), indent=2)
+
+
 def main():
     apply_changes = '--apply' in sys.argv
+    refresh_tile_version()
     meta = locations.load()
 
     wiki = {}
