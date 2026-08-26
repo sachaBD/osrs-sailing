@@ -146,7 +146,7 @@ def main():
         # dragging must pan by exactly the mouse delta, without selecting text
         box = page.locator('#map-viewport').bounding_box()
         cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
-        start = page.evaluate('() => ({x: view.x, y: view.y})')
+        start = page.evaluate('() => ({x: __app.view.x, y: __app.view.y})')
         page.mouse.move(cx, cy)
         page.mouse.down()
         for i in range(1, 7):
@@ -154,7 +154,7 @@ def main():
             page.wait_for_timeout(16)
         page.mouse.up()
         page.wait_for_timeout(120)
-        end = page.evaluate('() => ({x: view.x, y: view.y})')
+        end = page.evaluate('() => ({x: __app.view.x, y: __app.view.y})')
         c.check('drag pans by the mouse delta',
                 (round(end['x'] - start['x']), round(end['y'] - start['y'])) == (-120, -60),
                 f"{round(end['x'] - start['x'])},{round(end['y'] - start['y'])}")
@@ -170,8 +170,9 @@ def main():
         page.wait_for_timeout(150)
         onscreen = page.evaluate('''() => {
           const b = document.querySelector('#map-viewport').getBoundingClientRect();
-          const w = MAP.size[0] * view.scale, h = MAP.size[1] * view.scale;
-          const left = b.left + view.x, top = b.top + view.y;
+          const v = __app.view, M = __app.MAP_META;
+          const w = M.size[0] * v.scale, h = M.size[1] * v.scale;
+          const left = b.left + v.x, top = b.top + v.y;
           return Math.min(
             Math.min(b.right, left + w) - Math.max(b.left, left),
             Math.min(b.bottom, top + h) - Math.max(b.top, top));
@@ -205,7 +206,7 @@ def main():
 
         # every task must be picked up before it is delivered
         order = page.evaluate('''() => {
-          const t = currentTrip();
+          const t = __app.currentTrip();
           const seen = {};
           let ok = true;
           t.stops.forEach((s, i) => {

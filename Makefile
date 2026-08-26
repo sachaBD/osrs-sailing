@@ -12,11 +12,11 @@ data: ## Rebuild data.js from port_tasks.list + locations.tsv
 tiles: ## Download map tiles into tiles/ (~11MB, needed once for offline use)
 	python3 fetch_tiles.py
 
-check: ## Static smoke test of the browser JS
-	python3 check_static.py
+check: data ## Fast unit tests: python pipeline + JS logic in a real browser
+	python3 -m unittest discover -p 'test_*.py'
+	python3 js_test.py
 
-test: data ## Drive the real page in a headless browser and assert it works
-	python3 check_static.py
+test: check ## Unit tests plus the full end-to-end browser run
 	python3 smoke_test.py
 
 shots: data ## Same as test, but also write screenshots into shots/
@@ -36,7 +36,7 @@ refresh-apply: ## Same, but let the wiki overwrite your edited values
 	python3 refresh_wiki.py --apply
 
 clean: ## Remove generated files (keeps downloaded tiles)
-	rm -f data.js port_tasks.json port_tasks.csv
+	rm -f src/generated.js port_tasks.json port_tasks.csv
 
 clean-tiles: ## Remove downloaded tiles, e.g. after changing tile_version
 	rm -rf tiles
