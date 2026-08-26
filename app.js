@@ -22,6 +22,9 @@ const state = {
   region: new Set(),
   ocean: new Set(),
   port: new Set(),      // set by clicking markers on the map
+  trip: [],             // ordered task ids in the route builder
+  tripStart: '',
+  showAllRoutes: false,
   scope: 'any',
   direction: '',
   minLevel: 1,
@@ -186,7 +189,10 @@ function render() {
     <span>best <b>${known.length ? known.reduce((m, r) => (r.xp > m.xp ? r : m)).xp.toLocaleString() : '—'}</b></span>`;
 
   $('#tbody').innerHTML = rows.map((t) => `
-    <tr>
+    <tr class="${state.trip.includes(t.id) ? 'in-trip' : ''}">
+      <td class="mid"><button class="trip-btn" data-id="${t.id}"
+        title="${state.trip.includes(t.id) ? 'Remove from trip' : 'Add to trip'}"
+        >${state.trip.includes(t.id) ? '&minus;' : '+'}</button></td>
       <td class="num">${t.level}</td>
       <td class="num xp">${t.xp === null ? '<span class="unknown">?</span>' : t.xp.toLocaleString()}</td>
       <td>${t.noticeBoard}</td>
@@ -205,6 +211,7 @@ function render() {
     </tr>`).join('') || '<tr><td colspan="11" class="empty">No tasks match these filters.</td></tr>';
 
   stateToUrl();
+  renderTrip();
   if (view.ready) drawOverlay(rows);
   document.querySelector('#map-selection').textContent =
     state.port.size ? [...state.port].join(', ') : 'none';
@@ -249,6 +256,9 @@ function stateToUrl() {
   for (const k of URL_BOOL) if (state[k]) p.set(k, '1');
   for (const k of URL_SET) if (state[k].size) p.set(k, [...state[k]].join(SEP));
   if (state.mapOpen) p.set('map', '1');
+  if (state.showAllRoutes) p.set('allRoutes', '1');
+  if (state.trip.length) p.set('trip', state.trip.join(SEP));
+  if (state.tripStart) p.set('tripStart', state.tripStart);
   const qs = p.toString();
   history.replaceState(null, '', qs ? '?' + qs : location.pathname);
   store(STORE_KEY, qs);
@@ -269,6 +279,11 @@ function urlToState() {
     for (const v of values) state[k].add(v);
   }
   state.mapOpen = p.get('map') === '1';
+  state.showAllRoutes = p.get('allRoutes') === '1';
+  state.trip = p.has('trip')
+    ? p.get('trip').split(SEP).map(Number).filter((n) => TASK_BY_ID.has(n))
+    : [];
+  state.tripStart = p.get('tripStart') || '';
 }
 
 /* Push state into the controls, for links opened from scratch. */
@@ -285,6 +300,7 @@ function syncControls() {
   $('#f-unknown').checked = state.hideUnknownXp;
   $('#f-recover').checked = state.recoverAtOrigin;
   $('#f-board-dest').checked = state.boardAtDest;
+  $('#f-all-routes').checked = state.showAllRoutes;
   document.querySelectorAll('.ms').forEach((ms) => ms._apply());
 }
 
@@ -310,10 +326,24 @@ bind('#f-scope', 'scope');
 bind('#f-unknown', 'hideUnknownXp');
 bind('#f-recover', 'recoverAtOrigin');
 bind('#f-board-dest', 'boardAtDest');
+bind('#f-all-routes', 'showAllRoutes');
 bind('#f-min', 'minLevel', numOr(1));
 bind('#f-max', 'maxLevel', numOr(99));
 bind('#f-xpmin', 'minXp', numOr(null));
 bind('#f-xpmax', 'maxXp', numOr(null));
+
+$('#tbody').addEventListener('click', (e) => {
+  const btn = e.target.closest('.trip-btn');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+  if (state.trip.includes(id)) removeFromTrip(id); else addToTrip(id);
+});
+
+$('#trip-clear').addEventListener('click', clearTrip);
+$('#trip-start').addEventListener('change', (e) => {
+  state.tripStart = e.target.value;
+  render();
+});
 
 document.querySelectorAll('th[data-key]').forEach((th) => {
   th.addEventListener('click', () => {
@@ -341,6 +371,8 @@ $('#reset').addEventListener('click', () => {
   $('#f-scope').value = 'any';
   document.querySelectorAll('.ms').forEach((ms) => ms._reset());
   state.port.clear();
+  state.trip = [];
+  state.tripStart = '';
   syncControls();
   render();
 });

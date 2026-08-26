@@ -60,51 +60,79 @@ function drawTiles() {
   el.tiles.replaceChildren(frag);
 }
 
-/* Markers and routes for whatever the table is currently showing. */
+/* Overlay: the planned trip if there is one, otherwise the filtered routes. */
 function drawOverlay(rows) {
   const [w, h] = MAP.size;
   el.svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
   el.svg.style.width = w + 'px';
   el.svg.style.height = h + 'px';
 
-  // one line per origin/destination pair, weighted by how many tasks use it
-  const routes = new Map();
-  for (const t of rows) {
-    if (t.from === t.to) continue;
-    const key = t.from + '>' + t.to;
-    const r = routes.get(key) || { from: t.from, to: t.to, n: 0 };
-    r.n += 1;
-    routes.set(key, r);
-  }
-
-  const touched = new Set();
-  for (const t of rows) { touched.add(t.from); touched.add(t.to); touched.add(t.noticeBoard); }
-  const maxN = Math.max(1, ...[...routes.values()].map((r) => r.n));
+  const trip = currentTrip();
+  const onTrip = new Set(trip.stops.map((s) => s.port));
   const parts = [];
 
-  for (const r of routes.values()) {
-    const a = coordsOf(r.from);
-    const b = coordsOf(r.to);
+  // Background routes are a hairball at full dataset size, so they are opt-in
+  // once a trip exists or the filtered set is large.
+  const showRoutes = state.showAllRoutes || (!trip.stops.length && rows.length <= 120);
+  const touched = new Set();
+  for (const t of rows) { touched.add(t.from); touched.add(t.to); touched.add(t.noticeBoard); }
+
+  if (showRoutes) {
+    const routes = new Map();
+    for (const t of rows) {
+      if (t.from === t.to) continue;
+      const key = t.from + '>' + t.to;
+      const r = routes.get(key) || { from: t.from, to: t.to, n: 0 };
+      r.n += 1;
+      routes.set(key, r);
+    }
+    const maxN = Math.max(1, ...[...routes.values()].map((r) => r.n));
+    for (const r of routes.values()) {
+      const a = coordsOf(r.from);
+      const b = coordsOf(r.to);
+      if (!a || !b) continue;
+      parts.push(
+        '<line class="route" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] +
+        '" stroke-width="' + (1.5 + 3 * (r.n / maxN)) + '"><title>' + r.from + ' to ' + r.to +
+        ': ' + r.n + ' task' + (r.n === 1 ? '' : 's') + '</title></line>');
+    }
+  }
+
+  // The planned route. Each leg is drawn twice: a dark casing underneath so the
+  // line stays readable over the map's clutter, then the coloured line on top.
+  for (let i = 1; i < trip.stops.length; i++) {
+    const a = coordsOf(trip.stops[i - 1].port);
+    const b = coordsOf(trip.stops[i].port);
     if (!a || !b) continue;
-    const width = 1.5 + 4 * (r.n / maxN);
-    parts.push(
-      '<line class="route" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] +
-      '" stroke-width="' + width + '"><title>' + r.from + ' to ' + r.to + ': ' + r.n +
-      ' task' + (r.n === 1 ? '' : 's') + '</title></line>');
+    const coords = ' x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '"';
+    parts.push('<line class="trip-casing"' + coords + '></line>');
+    parts.push('<line class="trip-leg"' + coords + '></line>');
   }
 
   for (const [name, meta] of Object.entries(LOCATIONS)) {
     const p = coordsOf(name);
     if (!p) continue;
+    // a port can be visited more than once, so badge every stop number it holds
+    const stopNums = trip.stops
+      .map((s, i) => (s.port === name ? i + 1 : 0)).filter(Boolean);
     const cls = ['marker'];
-    if (!touched.has(name)) cls.push('dim');
+    // with a trip on screen every other port is background, filtered or not
+    if (onTrip.has(name)) cls.push('on-trip');
+    else if (trip.stops.length || !touched.has(name)) cls.push('dim');
     if (state.port.has(name)) cls.push('picked');
+    // labels only where they earn their place, else 30 names collide
+    if (onTrip.has(name) || state.port.has(name)) cls.push('labelled');
+
+    const badge = stopNums.length
+      ? '<g class="stop-badge"><circle r="' + (stopNums.length > 1 ? 15 : 11) + '"></circle>' +
+        '<text class="stop-n" y="4">' + stopNums.join(',') + '</text></g>'
+      : '';
     parts.push(
       '<g class="' + cls.join(' ') + '" data-port="' + name + '" transform="translate(' +
       p[0] + ',' + p[1] + ')">' +
       '<circle class="hit" r="16"></circle>' +
-      '<circle class="dot" r="7"></circle>' +
-      '<text y="-14">' + name + '</text>' +
+      '<circle class="dot" r="7"></circle>' + badge +
+      '<text class="label" y="-14">' + name + '</text>' +
       '<title>' + name + ' - ' + meta.region +
       (meta.dock_level ? ', dock level ' + meta.dock_level : '') + '</title></g>');
   }
@@ -191,23 +219,35 @@ function initMap() {
 
   drawTiles();
 
-  let dragging = false, moved = false, lastX = 0, lastY = 0;
+  let dragging = false, moved = false, lastX = 0, lastY = 0, startX = 0, startY = 0;
   el.viewport.addEventListener('pointerdown', (e) => {
-    dragging = true; moved = false;
-    lastX = e.clientX; lastY = e.clientY;
-    el.viewport.setPointerCapture(e.pointerId);
+    dragging = true;
+    moved = false;
+    lastX = startX = e.clientX;
+    lastY = startY = e.clientY;
+    // Capture is deliberately NOT taken here: while a pointer is captured the
+    // browser retargets the click to the capturing element, which would stop
+    // marker clicks ever reaching the overlay. It is taken once a drag starts.
   });
   el.viewport.addEventListener('pointermove', (e) => {
     if (!dragging) return;
-    const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
-    view.x += dx; view.y += dy;
-    lastX = e.clientX; lastY = e.clientY;
-    applyTransform();
+    if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 3) {
+      moved = true;
+      el.viewport.setPointerCapture(e.pointerId);
+    }
+    if (moved) {
+      view.x += e.clientX - lastX;
+      view.y += e.clientY - lastY;
+      applyTransform();
+    }
+    lastX = e.clientX;
+    lastY = e.clientY;
   });
   const endDrag = (e) => {
     dragging = false;
-    try { el.viewport.releasePointerCapture(e.pointerId); } catch (_) { /* already released */ }
+    if (el.viewport.hasPointerCapture && el.viewport.hasPointerCapture(e.pointerId)) {
+      el.viewport.releasePointerCapture(e.pointerId);
+    }
   };
   el.viewport.addEventListener('pointerup', endDrag);
   el.viewport.addEventListener('pointercancel', endDrag);

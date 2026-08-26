@@ -5,3 +5,4 @@ port_tasks.csv
 __pycache__/
 *.pyc
 tiles/
+shots/

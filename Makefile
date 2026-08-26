@@ -1,6 +1,6 @@
 PORT ?= 8000
 
-.PHONY: help data tiles check serve stop refresh refresh-apply clean clean-tiles
+.PHONY: help data tiles check test shots serve stop refresh refresh-apply clean clean-tiles
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | column -t -s "$$(printf '\t')"
@@ -14,6 +14,13 @@ tiles: ## Download map tiles into tiles/ (~11MB, needed once for offline use)
 
 check: ## Static smoke test of the browser JS
 	python3 check_static.py
+
+test: data ## Drive the real page in a headless browser and assert it works
+	python3 check_static.py
+	python3 smoke_test.py
+
+shots: data ## Same as test, but also write screenshots into shots/
+	python3 smoke_test.py --shots
 
 serve: data ## Serve the app at http://localhost:$(PORT)
 	@echo "Serving on http://localhost:$(PORT)/"

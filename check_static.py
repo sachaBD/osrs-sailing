@@ -81,7 +81,7 @@ def check_set_identity(js):
 
 def main():
     ok = True
-    for f in ['app.js', 'map.js']:
+    for f in ['app.js', 'map.js', 'trip.js']:
         src = strip_js(open(f).read())
         for a, b in [('{', '}'), ('(', ')'), ('[', ']')]:
             if src.count(a) != src.count(b):
@@ -92,7 +92,7 @@ def main():
     html = open('index.html').read()
     ids = set(re.findall(r'\bid="([^"]+)"', html))
     refs = set()
-    for f in ['app.js', 'map.js']:
+    for f in ['app.js', 'map.js', 'trip.js']:
         js = open(f).read()
         refs |= set(re.findall(r"querySelector\('#([^']+)'\)", js))
         refs |= set(re.findall(r"\$\('#([^']+)'\)", js))

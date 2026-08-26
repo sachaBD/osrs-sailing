@@ -61,8 +61,20 @@
     <span>Click a port to filter by it (uses the <b>Match on</b> scope).</span>
     <span>Selected: <b id="map-selection">none</b></span>
     <button id="map-clear">Clear selection</button>
-    <span class="muted">Line thickness = tasks on that route. Map tiles &copy; OSRS Wiki.</span>
+    <label class="inline"><input type="checkbox" id="f-all-routes"> Show every filtered route</label>
+    <span class="muted">Map tiles &copy; OSRS Wiki.</span>
   </div>
+</section>
+
+<section id="trip-panel" hidden>
+  <div class="trip-head">
+    <h2>Trip</h2>
+    <div id="trip-summary"></div>
+    <label for="trip-start">Start</label>
+    <select id="trip-start"></select>
+    <button id="trip-clear">Clear trip</button>
+  </div>
+  <ol id="trip-stops"></ol>
 </section>
 
 <div id="stats"></div>
@@ -71,6 +83,7 @@
 <table>
   <thead>
     <tr>
+      <th class="unsortable" title="Add to trip"></th>
       <th data-key="level" data-default="asc">Lvl</th>
       <th data-key="xp">XP</th>
       <th data-key="noticeBoard" data-default="asc">Notice board</th>
@@ -90,6 +103,7 @@
 
 <script src="data.js"></script>
 <script src="map.js"></script>
+<script src="trip.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -107,7 +107,7 @@ tbody tr:hover { background: #221d16; }
 /* ---- map ---- */
 #map-panel { border-bottom: 1px solid var(--line); background: #12100c; }
 #map-viewport {
-  position: relative; height: 62vh; min-height: 340px;
+  position: relative; height: 66vh; min-height: 400px;
   overflow: hidden; cursor: grab; touch-action: none;
   background: #0e1a24;
 }
@@ -128,20 +128,29 @@ tbody tr:hover { background: #221d16; }
 .route:hover { opacity: .9; }
 
 .marker { cursor: pointer; }
-.marker .hit { fill: transparent; }
+.marker .hit {
+  fill: transparent;
+  /* scales with the dot so the click target stays ~constant on screen;
+     without this it shrinks to a few pixels when zoomed out */
+  transform: scale(var(--inv));
+  transform-box: fill-box; transform-origin: center;
+}
 .marker .dot {
   fill: var(--accent); stroke: #17130d; stroke-width: 2;
   vector-effect: non-scaling-stroke;
-  transform: scale(var(--inv)); transform-origin: center;
+  transform: scale(var(--inv));
+  transform-box: fill-box; transform-origin: center;
 }
-.marker text {
+.marker .label {
   fill: var(--text); font-size: 13px; text-anchor: middle;
+  opacity: 0;                       /* 30 names at once collide; see .labelled */
   paint-order: stroke; stroke: #12100c; stroke-width: 3px;
   pointer-events: none; user-select: none;
-  transform: scale(var(--inv)); transform-origin: center;
+  transform: scale(var(--inv));
+  transform-box: fill-box; transform-origin: center;
 }
-.marker.dim .dot { fill: #6b5f4a; }
-.marker.dim text { opacity: .45; }
+.marker.labelled .label, .marker:hover .label { opacity: 1; }
+.marker.dim .dot { fill: #6b5f4a; opacity: .5; }
 .marker.picked .dot { fill: var(--accent-2); }
 .marker:hover .dot { fill: #fff0c4; }
 
@@ -161,3 +170,65 @@ tbody tr:hover { background: #221d16; }
 }
 #map-legend b { color: var(--text); }
 #map-legend button { align-self: auto; padding: 3px 8px; font-size: 12px; }
+
+/* ---- trip path on the map ---- */
+.trip-leg {
+  stroke: #a6e07a; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 6;
+  vector-effect: non-scaling-stroke; pointer-events: none;
+}
+.trip-casing {
+  stroke: #10160c; stroke-width: 7; stroke-linecap: round; opacity: .85;
+  vector-effect: non-scaling-stroke; pointer-events: none;
+}
+.marker.on-trip .dot { fill: #a6e07a; }
+.marker.on-trip .label { fill: #d8f2c2; }
+.stop-badge circle {
+  fill: #a6e07a; stroke: #10160c; stroke-width: 3;
+  transform-box: fill-box; transform-origin: center; transform: scale(var(--inv));
+}
+.stop-badge .stop-n {
+  fill: #12100c; font-size: 13px; font-weight: 700; text-anchor: middle;
+  transform-box: fill-box; transform-origin: center; transform: scale(var(--inv));
+  pointer-events: none;
+}
+
+/* ---- trip panel ---- */
+#trip-panel { border-bottom: 1px solid var(--line); background: #1b1811; }
+.trip-head {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 10px 22px 6px;
+}
+.trip-head h2 { margin: 0; font-size: 15px; color: var(--accent-2); letter-spacing: .5px; }
+.trip-head label { font-size: 11px; text-transform: uppercase; color: var(--muted); }
+#trip-summary { display: flex; gap: 18px; color: var(--muted); font-size: 13px; }
+#trip-summary b { color: var(--text); }
+#trip-stops {
+  list-style: none; margin: 0; padding: 4px 22px 14px;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+#trip-stops li {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 10px; font-size: 12px; min-width: 190px;
+}
+#trip-stops .n {
+  flex: none; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent-2); color: #12100c;
+  font-weight: 700; text-align: center; line-height: 20px;
+}
+#trip-stops .port { font-weight: 600; color: var(--text); }
+#trip-stops .acts { color: var(--muted); }
+#trip-stops .pick { color: var(--accent); }
+#trip-stops .drop { color: var(--accent-2); }
+
+/* ---- add-to-trip button ---- */
+.trip-btn {
+  padding: 0 7px; font-size: 14px; line-height: 20px;
+  background: transparent; color: var(--muted); align-self: auto;
+}
+.trip-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
+tr.in-trip { background: #1d2417; }
+tr.in-trip .trip-btn { color: var(--accent-2); border-color: var(--accent-2); }
+th.unsortable { cursor: default; }
+th.unsortable:hover { color: var(--muted); }
+label.inline { display: flex; align-items: center; gap: 6px; color: var(--muted); }
