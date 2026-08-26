@@ -143,6 +143,43 @@ def main():
         c.check('map tiles load', tiles > 0 and broken == 0,
                 f'{tiles} tiles, {broken} broken')
 
+        # dragging must pan by exactly the mouse delta, without selecting text
+        box = page.locator('#map-viewport').bounding_box()
+        cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        start = page.evaluate('() => ({x: view.x, y: view.y})')
+        page.mouse.move(cx, cy)
+        page.mouse.down()
+        for i in range(1, 7):
+            page.mouse.move(cx - i * 20, cy - i * 10)
+            page.wait_for_timeout(16)
+        page.mouse.up()
+        page.wait_for_timeout(120)
+        end = page.evaluate('() => ({x: view.x, y: view.y})')
+        c.check('drag pans by the mouse delta',
+                (round(end['x'] - start['x']), round(end['y'] - start['y'])) == (-120, -60),
+                f"{round(end['x'] - start['x'])},{round(end['y'] - start['y'])}")
+        c.check('drag selects no text', page.evaluate('() => String(getSelection())') == '')
+
+        # and the map cannot be flung out of reach
+        page.mouse.move(cx, cy)
+        page.mouse.down()
+        for i in range(1, 20):
+            page.mouse.move(cx + i * 130, cy + i * 100)
+            page.wait_for_timeout(8)
+        page.mouse.up()
+        page.wait_for_timeout(150)
+        onscreen = page.evaluate('''() => {
+          const b = document.querySelector('#map-viewport').getBoundingClientRect();
+          const w = MAP.size[0] * view.scale, h = MAP.size[1] * view.scale;
+          const left = b.left + view.x, top = b.top + view.y;
+          return Math.min(
+            Math.min(b.right, left + w) - Math.max(b.left, left),
+            Math.min(b.bottom, top + h) - Math.max(b.top, top));
+        }''')
+        c.check('map cannot be panned off screen', onscreen > 50, f'{round(onscreen)}px visible')
+        page.click('#map-fit')
+        page.wait_for_timeout(150)
+
         # clicking a marker filters the table
         # click the dot, not the <g>: its bbox includes the label above, so the
         # bbox centre can land in empty space between label and marker

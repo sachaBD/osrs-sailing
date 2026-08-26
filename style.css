@@ -109,6 +109,8 @@ tbody tr:hover { background: #221d16; }
 #map-viewport {
   position: relative; height: 66vh; min-height: 400px;
   overflow: hidden; cursor: grab; touch-action: none;
+  /* without this a drag selects the map labels instead of panning */
+  user-select: none; -webkit-user-select: none;
   background: #0e1a24;
 }
 #map-viewport:active { cursor: grabbing; }

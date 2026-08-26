@@ -139,7 +139,20 @@ function drawOverlay(rows) {
   el.svg.innerHTML = parts.join('');
 }
 
+/* Keep some of the map on screen: without this you can fling it into the void
+   and the only way back is the Fit button. */
+function clampPan() {
+  const box = el.viewport.getBoundingClientRect();
+  if (!box.width) return;
+  const w = MAP.size[0] * view.scale;
+  const h = MAP.size[1] * view.scale;
+  const keep = Math.min(140, w / 2, h / 2);   // minimum map visible on any edge
+  view.x = Math.min(box.width - keep, Math.max(keep - w, view.x));
+  view.y = Math.min(box.height - keep, Math.max(keep - h, view.y));
+}
+
 function applyTransform() {
+  clampPan();
   el.layer.style.transform =
     'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.scale + ')';
   // keep markers and labels a constant size on screen
@@ -251,6 +264,13 @@ function initMap() {
   };
   el.viewport.addEventListener('pointerup', endDrag);
   el.viewport.addEventListener('pointercancel', endDrag);
+
+  // A press-and-drag would otherwise start a text selection or a native image
+  // drag, which hijacks panning. Cancelling those two events leaves the
+  // compatibility mouse events (and so marker clicks) untouched, which
+  // preventDefault on pointerdown would not.
+  el.viewport.addEventListener('dragstart', (e) => e.preventDefault());
+  el.viewport.addEventListener('selectstart', (e) => e.preventDefault());
 
   el.viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
