@@ -77,7 +77,6 @@ class Core:
                     loaded = True
                 if loaded and self.dest[task] == player:
                     gained += self.xp[task]
-                    gone |= 1 << task     # it leaves the board it came from
                     k += 1
                     if k >= self.reroll:
                         k, seen, gone = 0, 0, 0   # every board redraws at once

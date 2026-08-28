@@ -16,6 +16,7 @@ bounty_unlock	30	level	wiki	bounty tasks share the board; we ignore them
 tick	0.6	seconds	wiki	the game's quantum
 sail_speed	2	tiles/tick	game	approx, at level 30; may vary with hull tier
 t_dock	10	ticks	guess	docking and undocking per port
+t_cargo	33	ticks	game	loading and unloading, ~20s per port stop
 t_board	5	ticks	guess	reading a board and accepting one task
 t_drop	3	ticks	guess	cancelling a task (port master or captain's log)
 t_charter	10	ticks	guess	wiki says "only a few seconds"

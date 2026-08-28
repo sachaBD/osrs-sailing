@@ -123,6 +123,34 @@ def _wander(sim: Sim, actions: np.ndarray) -> Action:
     return _pick(sails, -cost)
 
 
+def best_shuttle(sim: Sim) -> Action:
+    """Find the best route you can run over and over, and run it.
+
+    A completed task stays on its board and each repeat advances the reroll,
+    so eight completions an epoch can all be spent on one short run. The cycle
+    is accept, carry, deliver, come back - and because a board is either the
+    origin or the destination, coming back is the same leg again. Two tasks
+    running opposite ways along one leg share it, which is why the score is
+    per cycle rather than per task.
+    """
+    inst, st = sim.instance, sim.state
+    actions = sim.legal_actions()
+    accepts = actions[actions[:, 0] == ACCEPT]
+    if len(accepts) and st.free_slots:
+        task = accepts[:, 1]
+        leg = inst.sail[inst.task_origin[task], inst.task_dest[task]]
+        reach = inst.sail[st.port_player, inst.task_origin[task]]
+        # a round trip returns you to where you can take it again
+        cycle = 2 * leg + inst.params.t_board + reach
+        return _pick(accepts, inst.task_xp[task] / np.maximum(cycle, 1))
+    return _or_wander(_errand(sim), sim, actions)
+
+
+def _rollout():
+    from .rollout import rollout
+    return rollout()
+
+
 def _planner():
     from .plan import planner  # imported late: plan.py reads this module's Sim
     return planner()
@@ -143,7 +171,8 @@ ALL = {
     'greedy_xp': greedy_xp,
     'greedy_xp_per_tick': greedy_xp_per_tick,
     'scout_then_greedy': scout_then_greedy,
+    'best_shuttle': best_shuttle,
 }
 
 # policies that carry state between steps, so each run needs a fresh one
-FACTORIES = {'planner': _planner, 'explorer': _explorer, 'oracle (cheats)': _oracle}
+FACTORIES = {'rollout': _rollout, 'planner': _planner, 'explorer': _explorer, 'oracle (cheats)': _oracle}

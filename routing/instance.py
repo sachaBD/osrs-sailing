@@ -86,7 +86,8 @@ class Instance:
         for i, a in enumerate(names):
             for j, b in enumerate(names):
                 if i != j:
-                    sail[i, j] = round(matrix.between(a, b) / params.sail_speed) + params.t_dock
+                    sail[i, j] = (round(matrix.between(a, b) / params.sail_speed)
+                                  + params.t_dock + params.t_cargo)
 
         charter_ticks = np.full(size, NONE, np.int32)
         recall_ticks = np.full(size, NONE, np.int32)

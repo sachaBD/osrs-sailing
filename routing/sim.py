@@ -94,11 +94,8 @@ class Sim:
                 st.xp += int(inst.task_xp[task])
                 st.held[slot] = NONE
                 st.loaded[slot] = False
-                # a finished task leaves the board it came from; without this
-                # the same short run can be farmed until the reroll
-                board = int(inst.task_board[task])
-                self._true_offers[board][self._true_offers[board] == task] = NONE
-                st.offers[board][st.offers[board] == task] = NONE
+                # the task stays on its board and may be run again; repeating
+                # one short profitable route is legal play, not an exploit
                 st.completions += 1
                 if st.completions >= inst.params.reroll_completions:
                     self._reroll()

@@ -137,6 +137,43 @@ control needs a value function for what happens after the horizon, and a
 distance proxy is a poor one. That is Layer 5's job, and it is now the
 argument for Layer 5 rather than a curiosity.
 
+### Policy rollout, which should have come first
+
+Added afterwards, and it is the standard baseline this project should have
+started from: take each legal action, let a base policy finish, score the
+result, play whichever led somewhere best. Forty lines, no bound to get wrong,
+and it supplies from the base policy the value estimate that a truncated
+search otherwise has to invent.
+
+Three things had to be right before it worked, all of them textbook and all of
+them things we got wrong first:
+
+- **The base policy has to be the good one.** Rollout is its base plus roughly
+  one improvement step, so a weakened base caps it. Ours sailed to boards while
+  cargo sat aboard, and scored below greedy until it discharged first.
+- **The rolled-out future cannot be blind.** With unread boards empty, every
+  future is a world where no new work appears, every action scores alike, and
+  rollout collapses back to its base.
+- **One sampled future is worse than none.** It chases whichever board drew the
+  luckiest hand and re-draws every step. Averaging several futures, with the
+  same futures scoring every action so the comparison carries no sampling noise
+  of its own, is what makes it work.
+
+Level 58, 21 ports, capacity 4, thirty seeds:
+
+| policy | xp/hr |
+| --- | --- |
+| planner, 2 deliveries | 25,345 +/- 1,331 |
+| rollout, 8 futures | 24,746 +/- 1,020 |
+| greedy / rollout's base | 21,443 +/- 1,353 |
+| best repeatable shuttle | 20,646 +/- 1,340 |
+
+The two searches agree within their error bars while working completely
+differently, which is the useful part: an independent method landing in the
+same place is evidence that about 25k is real and that neither is leaving much
+on the table. Rollout is the slower of the two, so the branch and bound earns
+its keep - but it had to be checked against something standard to know that.
+
 ## Layer 3 - the uncertainty
 
 Now the offers are not all known. Two approaches, and the difference between

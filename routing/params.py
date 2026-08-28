@@ -29,6 +29,10 @@ def _rows(path: str, fields: list[str]) -> list[dict[str, str]]:
 class Params:
     """Scalar costs, in ticks, plus the capacity ladder.
 
+    `t_dock` and `t_cargo` are both charged on arriving at a port: the first
+    for handling the boat, the second for moving the cargo. They are separate
+    because only one of them has been measured.
+
     Every field except `capacity` and `courier_per_board` is a duration; see
     params.tsv for which of them anyone has actually measured.
     """
@@ -36,6 +40,7 @@ class Params:
     courier_per_board: int
     reroll_completions: int
     t_dock: int
+    t_cargo: int
     t_board: int
     t_drop: int
     t_charter: int
@@ -69,7 +74,8 @@ class Params:
             sail_speed=float(raw['sail_speed']),
             courier_per_board=int(raw['courier_per_board']),
             reroll_completions=int(raw['reroll_completions']),
-            t_dock=ticks('t_dock'), t_board=ticks('t_board'), t_drop=ticks('t_drop'),
+            t_dock=ticks('t_dock'), t_cargo=ticks('t_cargo'),
+            t_board=ticks('t_board'), t_drop=ticks('t_drop'),
             t_charter=ticks('t_charter'), t_recall=ticks('t_recall'),
             capacity=ladder)
 
