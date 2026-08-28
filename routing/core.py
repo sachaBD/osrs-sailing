@@ -111,12 +111,15 @@ class Core:
             out += sorted(((2, p) for p in useful), key=lambda m: self.sail[player][m[1]])
 
         if explore:
-            if len(held) < self.capacity and not any(l for _, l in held):
+            # Chartering never touches the boat, so cargo is no reason not to
+            # go and look: you read a board, accept, and charter back to the
+            # hull. Only recall destroys cargo, so only recall is gated on it.
+            if len(held) < self.capacity:
                 out += [(3, p) for p in range(self.n_ports)
                         if self.charter[p] != NONE and p != player
                         and self.has_board[p] and not seen >> p & 1]
             if boat != player:
-                if self.recall[player] != NONE:
+                if self.recall[player] != NONE and not any(l for _, l in held):
                     out.append((4, 0))
                 if self.charter[boat] != NONE:
                     out.append((3, boat))

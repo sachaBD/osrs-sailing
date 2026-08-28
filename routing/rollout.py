@@ -85,12 +85,14 @@ def choose(sim: Sim, rho: float, horizon: int = HORIZON, offers: str = 'sample',
     comparison between actions carries no sampling noise of its own.
     """
     draw = rng or np.random.default_rng()
-    views = [_view(sim, offers, draw) for _ in range(max(samples, 1))]
+    views = [_view(sim, offers, draw, belief) for belief in range(max(samples, 1))]
     legal = sim.legal_actions()
 
     best, best_value = None, -np.inf
     for action in legal:
         move = (int(action[0]), int(action[1]))
+        if move[0] == 1:      # abandoning is never part of the base plan here
+            continue
         total, counted = 0.0, 0
         for core in views:
             start, _ = core.settle(_start(sim))

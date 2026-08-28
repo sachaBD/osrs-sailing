@@ -40,8 +40,14 @@ class Plan:
     actions: list[tuple[int, int]]
 
 
-def _view(sim: Sim, offers: str, rng: np.random.Generator) -> Core:
-    """Flatten the instance plus one guess at the boards not yet read."""
+def _view(sim: Sim, offers: str, rng: np.random.Generator, belief: int = 0) -> Core:
+    """Flatten the instance plus one guess at the boards not yet read.
+
+    A sampled guess is keyed to the epoch, not redrawn every decision. Without
+    that the agent's belief about a board jitters on every step: it accepts a
+    task, changes its mind, abandons, re-accepts, and burns the clock on board
+    fees. Beliefs should only move when the world does, which is at a reroll.
+    """
     inst, state = sim.instance, sim.state
     rows = []
     for port in range(inst.n_ports):
@@ -51,8 +57,9 @@ def _view(sim: Sim, offers: str, rng: np.random.Generator) -> Core:
         if state.seen[port] or offers == 'oracle':
             drawn = sim._true_offers[port]
         elif offers == 'sample':
-            drawn = rng.choice(inst.board_pool(port),
-                               size=inst.params.courier_per_board, replace=False)
+            steady = np.random.default_rng([belief, state.epoch, port])
+            drawn = steady.choice(inst.board_pool(port),
+                                  size=inst.params.courier_per_board, replace=False)
         else:
             drawn = []
         rows.append(tuple(int(t) for t in drawn
@@ -91,7 +98,7 @@ def _optimistic(core: Core, state: SearchState, left: int, rho: float) -> float:
 
 def plan(sim: Sim, rho: float = RHO, deliveries: int = 3, node_budget: int = 20_000,
          offers: str = 'blind', explore: bool = False,
-         rng: np.random.Generator | None = None) -> Plan:
+         rng: np.random.Generator | None = None, belief: int = 0) -> Plan:
     """Best sequence of moves out to `deliveries` completions.
 
     `offers` picks what the search may see on unread boards - blind, one
@@ -99,7 +106,7 @@ def plan(sim: Sim, rho: float = RHO, deliveries: int = 3, node_budget: int = 20_
     is what makes going to look at a board a move it can weigh rather than
     one it can only stumble into.
     """
-    core = _view(sim, offers, rng or np.random.default_rng())
+    core = _view(sim, offers, rng or np.random.default_rng(), belief)
     best = Plan(-np.inf, [])
     partial = Plan(-np.inf, [])
     deepest = -1
@@ -183,8 +190,8 @@ class Planner:
         self.plans += 1
         budget = max(self.node_budget // self.scenarios, 400)
         drafts = [plan(sim, self.rho, self.deliveries, budget,
-                       self.offers, self.explore, self.rng)
-                  for _ in range(self.scenarios)]
+                       self.offers, self.explore, self.rng, belief)
+                  for belief in range(self.scenarios)]
         drafts = [d for d in drafts if d.actions]
         if not drafts:
             return []

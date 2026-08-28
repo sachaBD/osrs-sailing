@@ -19,16 +19,38 @@
 #                  the wiki's "a few seconds"; treat every number as a guess
 #                  until measured.
 #
-# Only ports with dock_level <= 30 are listed.  Add rows as the level rises.
+# All 30 ports are listed.  Charter availability is from the wiki's list of
+# 21 charter destinations; the ones it does not serve need a teleport or a
+# sail, and are the places scouting cannot reach cheaply.
 
 port	charter	charter_req	teleport	walk_ticks	ticks	confidence
+Aldarin	y	enter Varlamore	charter only	0	10	charter from wiki
 Ardougne	n		Ardougne Teleport (Magic 51) / Ardougne cloak	?	?	teleport unverified
 Brimhaven	y		charter only	0	10	charter from wiki
-Catherby	y		Camelot Teleport (Magic 45) + walk	?	10	charter from wiki
+Cairn Isle	n		none known	?	?	teleport unverified
+Catherby	y		charter only	0	10	charter from wiki
+Civitas illa Fortis	y	enter Varlamore	charter only	0	10	charter from wiki
+Corsair Cove	y		charter only	0	10	charter from wiki
+Deepfin Point	y	67 Sailing	charter only	0	10	charter from wiki
+Entrana	n		via Port Sarim monks	?	?	teleport unverified
+Etceteria	n		Miscellania ring / Fremennik teleport	?	?	teleport unverified
 Hosidius	n		Xeric's talisman / Book of the Dead	?	?	teleport unverified
+Jatizso	n		Fremennik lyre + boat	?	?	teleport unverified
 Land's End	y	enter Great Kourend	charter only	0	10	charter from wiki
+Lunar Isle	n		Lunar teleport	?	?	teleport unverified
 Musa Point	y		charter only	0	10	charter from wiki
+Neitiznot	n		Fremennik lyre + boat	?	?	teleport unverified
+Piscatoris	n		Piscatoris teleport / fairy ring	?	?	teleport unverified
 Port Khazard	y		charter only	0	10	charter from wiki
-Port Piscarilius	y	enter Great Kourend	Book of the Dead (Piscarilius)	?	10	charter from wiki
-Port Sarim	y		Amulet of glory (Draynor) + walk	?	10	charter from wiki
+Port Piscarilius	y	enter Great Kourend	charter only	0	10	charter from wiki
+Port Roberts	y	50 Sailing	charter only	0	10	charter from wiki
+Port Sarim	y		charter only	0	10	charter from wiki
+Port Tyras	y	Regicide	charter only	0	10	charter from wiki
+Prifddinas	y	Song of the Elves	charter only	0	10	charter from wiki
+Red Rock	y	partial The Red Reef	charter only	0	10	charter from wiki
+Rellekka	n		Fremennik lyre	?	?	teleport unverified
+Ruins of Unkah	n		Desert amulet / carpet	?	?	teleport unverified
+Sunset Coast	y	enter Varlamore	charter only	0	10	charter from wiki
 The Pandemonium	y	Pandemonium quest	charter only	0	10	charter from wiki
+The Summer Shore	y	Troubled Tortugans	charter only	0	10	charter from wiki
+Void Knights' Outpost	n		Pest Control lander from Port Sarim	?	?	teleport unverified

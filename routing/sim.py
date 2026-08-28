@@ -31,12 +31,14 @@ class State:
     offers: np.ndarray      # (P, K) int32, NONE where unread or not a board
     seen: np.ndarray        # (P,) bool, reset by a reroll
     completions: int = 0    # k, toward the reroll
+    epoch: int = 0          # rerolls so far; beliefs are keyed to it
     xp: int = 0
     ticks: int = 0
 
     def copy(self) -> State:
         return State(self.port_player, self.port_boat, self.held.copy(), self.loaded.copy(),
-                     self.offers.copy(), self.seen.copy(), self.completions, self.xp, self.ticks)
+                     self.offers.copy(), self.seen.copy(), self.completions, self.epoch,
+                     self.xp, self.ticks)
 
     @property
     def free_slots(self) -> int:
@@ -78,6 +80,7 @@ class Sim:
         self.state.seen[:] = False
         self.state.offers[:] = NONE
         self.state.completions = 0
+        self.state.epoch += 1
 
     def _settle(self) -> None:
         """Load, deliver, reroll and reveal - in that order. Not an action."""
