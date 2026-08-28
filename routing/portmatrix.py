@@ -1,0 +1,200 @@
+"""The port-to-port distance matrix: what the route search actually plans over.
+
+Distances come from the shortest path over open water, not over the lattice,
+so the lattice's remaining slack does not leak into any number here.  The
+lattice keeps its job of drawing routes and being a compact graph.
+
+That path is then pulled straight.  A grid search can only step in eight
+directions, so it renders a heading of, say, 22 degrees as a staircase and
+charges for every step of it - up to 8.2% more than sailing the line, and by
+an amount that varies with the heading, which would quietly distort one route
+option against another.  Pulling the slack out of the path removes that: each
+point is dropped whenever the ship can see past it to a later one.
+
+Ports are the only decision points in the routing problem: there is nothing to
+do in the middle of the ocean, and anywhere worth stopping is already a port.
+So once this matrix exists the sea chart has done its work, and what is left
+is combinatorial over 30 nodes.
+
+    python3 -m routing.portmatrix
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import numpy as np
+from scipy.sparse import csgraph
+
+from . import exact, watermask
+from .errors import ChartError
+from .seagraph import SeaGraph, _clear_line
+from .world import World
+
+MATRIX = 'routing/port_distances.json'
+ROUTES = 'routing/cache/port_routes.json'
+STRIDE = 8  # path is thinned to this before pulling, in game tiles
+
+
+class PortMatrix:
+    """Symmetric sailing distances between every pair of ports, in game tiles."""
+
+    def __init__(self, legs: dict[str, dict[str, float]]) -> None:
+        self.legs = legs
+        self.ports = sorted(legs)
+
+    def between(self, origin: str, destination: str) -> float:
+        try:
+            return self.legs[origin][destination]
+        except KeyError as exc:
+            raise ChartError(f'no charted leg {origin!r} -> {destination!r}') from exc
+
+    def as_array(self) -> tuple[list[str], np.ndarray]:
+        return self.ports, np.array([[self.legs[a][b] for b in self.ports] for a in self.ports])
+
+    @classmethod
+    def load(cls, path: str = MATRIX) -> PortMatrix:
+        try:
+            with open(path) as f:
+                return cls(json.load(f)['legs'])
+        except FileNotFoundError as exc:
+            raise ChartError(
+                f'{path} not found; build it with `python3 -m routing.portmatrix`') from exc
+
+    def save(self, path: str = MATRIX) -> None:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w') as f:
+            json.dump({'units': 'game tiles', 'source': 'pixel-exact over the water mask',
+                       'legs': self.legs}, f, indent=1, sort_keys=True)
+
+
+def _length(points: list[tuple[int, int]]) -> float:
+    array = np.array(points, float)
+    return float(np.hypot(*(array[1:] - array[:-1]).T).sum())
+
+
+def _pull_once(mask: watermask.WaterMask,
+               track: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    out = [track[0]]
+    i = 0
+    while i < len(track) - 1:
+        j = len(track) - 1
+        while j > i + 1 and not _clear_line(mask, track[i], track[j]):
+            j -= 1
+        out.append(track[j])
+        i = j
+    return out
+
+
+def pull_straight(mask: watermask.WaterMask, track: list[tuple[int, int]],
+                  passes: int = 4) -> list[tuple[int, int]]:
+    """Drop every point the ship can see past, leaving the corners it must round.
+
+    One pass is greedy from whichever end it starts, so it settles on a
+    different set of corners depending on direction.  Alternating the
+    direction and keeping whatever is shorter converges within a few passes
+    and takes most of that arbitrariness back out.
+    """
+    best = _pull_once(mask, track)
+    for _ in range(passes):
+        candidate = _pull_once(mask, best[::-1])[::-1]
+        if _length(candidate) >= _length(best) - 0.01:
+            break
+        best = candidate
+    return best
+
+
+def build(mask: watermask.WaterMask, graph: SeaGraph
+          ) -> tuple[PortMatrix, dict[str, dict[str, list[tuple[int, int]]]]]:
+    """-> the matrix, and the water each pair's shortest path actually follows."""
+    water, index = exact.water_graph(mask)
+    berths = {name: tuple(graph.nodes[i]) for name, i in graph.berths.items()}
+    nodes = {name: int(index[rc]) for name, rc in berths.items()}
+    stranded = [name for name, node in nodes.items() if node < 0]
+    if stranded:
+        raise ChartError(f'berths not on open sea: {stranded}')
+
+    pixels = np.argwhere(index >= 0)
+    legs: dict[str, dict[str, float]] = {}
+    routes: dict[str, dict[str, list[tuple[int, int]]]] = {}
+    for name, source in nodes.items():
+        dist, prev = csgraph.dijkstra(water, indices=source, return_predecessors=True)
+        legs[name] = {}
+        routes[name] = {}
+        for other, target in nodes.items():
+            if not np.isfinite(dist[target]):
+                raise ChartError(f'no water route {name} -> {other}')
+            if other == name:
+                legs[name][other] = 0.0
+                continue
+            track, node = [target], target
+            while node != source:
+                node = int(prev[node])
+                track.append(node)
+            track.reverse()
+            thinned = track[::STRIDE] + [track[-1]]
+            course = pull_straight(mask, [(int(r), int(c)) for r, c in pixels[thinned]])
+            legs[name][other] = round(_length(course), 1)
+            routes[name][other] = course
+    return PortMatrix(legs), routes
+
+
+def main() -> None:
+    mask = watermask.build()
+    graph = SeaGraph.load()
+    world = World.load()
+    matrix, routes = build(mask, graph)
+
+    ports, table = matrix.as_array()
+    # Both directions are real sailable paths, so where they disagree the
+    # shorter one is simply the better answer - not something to average.
+    asymmetry = float(np.abs(table - table.T).max())
+    for i, a in enumerate(ports):
+        for j, b in enumerate(ports):
+            if table[j, i] < table[i, j]:
+                matrix.legs[a][b] = round(float(table[j, i]), 1)
+                if a != b:
+                    routes[a][b] = routes[b][a][::-1]
+
+    # a shortest-path matrix must obey the triangle inequality; if it does not,
+    # something is wrong with the graph rather than with the route search
+    worst = 0.0
+    for k in range(len(ports)):
+        slack = table[:, k, None] + table[None, k, :] - table
+        worst = min(worst, float(slack.min()))
+    # Pulling is greedy per pair, so A->C can come out slightly longer than
+    # A->B->C.  Closing the matrix under the triangle inequality takes that
+    # back out, and is sound here because a ship may sail past a port without
+    # stopping - the shorter figure is a real distance, not a fiction.
+    before = -worst
+    for k in range(len(ports)):
+        table = np.minimum(table, table[:, k, None] + table[None, k, :])
+    for i, a in enumerate(ports):
+        for j, b in enumerate(ports):
+            matrix.legs[a][b] = round(float(table[i, j]), 1)
+    closed = 0.0
+    for k in range(len(ports)):
+        closed = min(closed, float((table[:, k, None] + table[None, k, :] - table).min()))
+    if closed < -0.05:
+        raise ChartError(f'triangle inequality still violated by {-closed:.2f} tiles')
+
+    matrix.save()
+    Path(ROUTES).parent.mkdir(parents=True, exist_ok=True)
+    with open(ROUTES, 'w') as f:
+        json.dump({str(a): {str(b): p for b, p in row.items()} for a, row in routes.items()}, f)
+
+    off = table[~np.eye(len(ports), dtype=bool)]
+    straight = np.array([[float(np.hypot(*np.subtract(world.ports[a].coords,
+                                                      world.ports[b].coords)))
+                          for b in ports] for a in ports])
+    detour = off / straight[~np.eye(len(ports), dtype=bool)]
+    print(f'{MATRIX}: {len(ports)} ports, {len(off) // 2} pairs')
+    print(f'  symmetrised (worst disagreement {asymmetry:.1f} tiles); '
+          f'closed triangle inequality (was off by {before:.0f})')
+    print(f'  shortest {off.min():.0f} tiles, longest {off.max():.0f}, median {np.median(off):.0f}')
+    print(f'  vs straight lines: median x{np.median(detour):.2f}, worst x{detour.max():.2f}')
+    print(f'{ROUTES}: route geometry for drawing, every {STRIDE} tiles')
+
+
+if __name__ == '__main__':
+    main()

@@ -1,6 +1,7 @@
 PORT ?= 8000
 
-.PHONY: help data tiles check test shots serve stop refresh refresh-apply clean clean-tiles
+.PHONY: help data tiles check test shots serve stop refresh refresh-apply clean clean-tiles \
+        chart chart-check chart-render clean-chart
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | column -t -s "$$(printf '\t')"
@@ -34,6 +35,21 @@ refresh: ## Re-check locations.tsv against the wiki (fills blanks, keeps your ed
 
 refresh-apply: ## Same, but let the wiki overwrite your edited values
 	python3 refresh_wiki.py --apply
+
+chart: ## Build the sea graph and the port distance matrix (needs `make tiles`)
+	python3 -m routing.build_graph
+	python3 -m routing.portmatrix
+
+chart-check: ## Report port pairs the lattice still routes the long way round
+	python3 -m routing.check_graph
+
+chart-render: ## Draw the graph, the sea lanes, and a sample of routes
+	python3 -m routing.render_graph --tiles
+	python3 -m routing.render_graph --lanes
+	python3 -m routing.render_sample
+
+clean-chart: ## Remove the generated caches and renders under routing/
+	rm -rf routing/cache routing/renders
 
 clean: ## Remove generated files (keeps downloaded tiles)
 	rm -f src/generated.js port_tasks.json port_tasks.csv

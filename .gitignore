@@ -6,3 +6,7 @@ __pycache__/
 *.pyc
 tiles/
 shots/
+
+# routing: regenerable from the tiles by `make chart`
+routing/cache/
+routing/renders/
