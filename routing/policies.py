@@ -1,7 +1,7 @@
 """Baseline policies. Each maps a `Sim` to one legal action.
 
 These exist to floor the problem and to shake out the dynamics: a planner that
-cannot beat `greedy_rate` is not batching, and batching is most of the problem.
+cannot beat `greedy_xp_per_tick` is not batching, and batching is most of the problem.
 None of them scout deliberately - they read whatever board they happen to be
 standing at.
 """
@@ -64,8 +64,13 @@ def greedy_xp(sim: Sim) -> Action:
     return _or_wander(_errand(sim), sim, actions)
 
 
-def greedy_rate(sim: Sim) -> Action:
-    """Take the best XP per tick of the work the task implies, from here."""
+def greedy_xp_per_tick(sim: Sim) -> Action:
+    """Take the task with the best XP per tick of travel it implies from here.
+
+        score = xp / (sail[here -> origin] + sail[origin -> destination])
+
+    Contrast greedy_xp, which reads the XP number and ignores the distance.
+    """
     inst, st = sim.instance, sim.state
     actions, accepts = _accepts(sim)
     if len(accepts):
@@ -87,7 +92,7 @@ def scout_then_greedy(sim: Sim) -> Action:
     inst, st = sim.instance, sim.state
     actions, accepts = _accepts(sim)
     if len(accepts):
-        return greedy_rate(sim)
+        return greedy_xp_per_tick(sim)
 
     # only scout with an empty hold: rejoining the boat means recalling it,
     # and a recall destroys whatever cargo is aboard
@@ -121,6 +126,6 @@ def _wander(sim: Sim, actions: np.ndarray) -> Action:
 ALL = {
     'random': random_legal,
     'greedy_xp': greedy_xp,
-    'greedy_rate': greedy_rate,
+    'greedy_xp_per_tick': greedy_xp_per_tick,
     'scout_then_greedy': scout_then_greedy,
 }

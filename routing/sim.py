@@ -128,13 +128,21 @@ class Sim:
         return np.array(out, np.int32).reshape(-1, 2)
 
     def step(self, action: tuple[int, int] | np.ndarray) -> tuple[int, int]:
-        inst, st = self.instance, self.state
         kind, arg = int(action[0]), int(action[1])
         legal = self.legal_actions()
         if not ((legal[:, 0] == kind) & (legal[:, 1] == arg)).any():
             raise ModelError(f'illegal action {KIND_NAMES[kind]}({arg}) '
-                             f'at port {st.port_player}')
+                             f'at port {self.state.port_player}')
+        return self.step_unchecked(action)
 
+    def step_unchecked(self, action: tuple[int, int] | np.ndarray) -> tuple[int, int]:
+        """`step` without re-deriving the legal set, for search.
+
+        Only safe with an action that came from `legal_actions` on this same
+        state; anything else corrupts the state silently rather than raising.
+        """
+        inst, st = self.instance, self.state
+        kind, arg = int(action[0]), int(action[1])
         before_xp = st.xp
         if kind == ACCEPT:
             st.held[np.flatnonzero(st.held == NONE)[0]] = arg
@@ -157,6 +165,17 @@ class Sim:
         st.ticks += cost
         self._settle()
         return st.xp - before_xp, cost
+
+    def clone(self) -> Sim:
+        """A detached copy, for search to play forward without consequence.
+
+        The planner explores by stepping clones, so it can never disagree with
+        the real dynamics - there is only one implementation of them.
+        """
+        twin = Sim(self.instance, self.rng)
+        twin.state = self.state.copy()
+        twin._true_offers = self._true_offers
+        return twin
 
     def run(self, policy, horizon: int) -> State:
         """Drive `policy(sim) -> action` until `horizon` ticks have passed."""

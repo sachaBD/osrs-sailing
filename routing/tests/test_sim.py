@@ -134,8 +134,8 @@ class TestPolicies(unittest.TestCase):
     def test_greedy_beats_random_by_a_mile(self):
         from routing.evaluate import measure
         random_rate, _ = measure(INSTANCE, policies.random_legal, seeds=4, horizon=6000)
-        greedy_rate, _ = measure(INSTANCE, policies.greedy_rate, seeds=4, horizon=6000)
-        self.assertGreater(greedy_rate, 10 * random_rate)
+        greedy_xp_per_tick, _ = measure(INSTANCE, policies.greedy_xp_per_tick, seeds=4, horizon=6000)
+        self.assertGreater(greedy_xp_per_tick, 10 * random_rate)
 
 
 if __name__ == '__main__':

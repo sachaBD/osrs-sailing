@@ -1,13 +1,13 @@
 """Drive the real page in a headless browser and assert it actually works.
 
-check_static.py only sees syntax and DOM ids, which is how four dead filter
-dropdowns shipped. This exercises the wiring: every control must change the
-visible row count, survive a reload through the URL, and leave the console clean.
+tests/unit.js covers the pure logic; this covers the wiring, which is where the
+bugs have actually been: four filter dropdowns once shipped dead because nothing
+clicked them. Every control must change the visible row count, state must
+survive a reload through the URL, the map must render, pan and stay reachable,
+and the console must stay clean.
 
-    make test              run the checks
-    make shots             also write screenshots into shots/
-
-Screenshots are written when --shots is passed, so they can be looked at.
+    make test               run the checks
+    make shots              also write screenshots into shots/
 """
 import subprocess
 import sys
