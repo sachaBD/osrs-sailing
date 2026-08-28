@@ -31,6 +31,21 @@ So: measure the water first, decide what to optimise second.
     world.py         ports and tasks as typed records, plus the OSRS xp table
     errors.py        typed errors
 
+  the problem itself
+
+    params.py        reads params.tsv and transport.tsv
+    instance.py      names in, arrays out - the only module that knows a name
+    sim.py           the SMDP over those arrays; integers only
+    policies.py      baseline policies
+    evaluate.py      runs them and reports xp/hr
+    tests/           behavioural tests for the simulator
+
+    make sim         run the baselines
+    make sim-sweep   and check the ranking survives the guessed constants
+
+PROBLEM.md specifies it, INSTANCE.md is the level-30 slice, APPROACH.md is
+the plan of attack.
+
     make chart          # sea graph + distance matrix   (needs `make tiles`)
     make chart-check    # pairs the lattice still routes the long way round
     make chart-render   # the graph, the sea lanes, a sample of routes

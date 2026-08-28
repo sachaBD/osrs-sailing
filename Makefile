@@ -1,7 +1,7 @@
 PORT ?= 8000
 
 .PHONY: help data tiles check test shots serve stop refresh refresh-apply clean clean-tiles \
-        chart chart-check chart-render clean-chart
+        chart chart-check chart-render clean-chart sim sim-sweep
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | column -t -s "$$(printf '\t')"
@@ -47,6 +47,12 @@ chart-render: ## Draw the graph, the sea lanes, and a sample of routes
 	python3 -m routing.render_graph --tiles
 	python3 -m routing.render_graph --lanes
 	python3 -m routing.render_sample
+
+sim: ## Run the baseline policies against the simulator
+	python3 -m routing.evaluate
+
+sim-sweep: ## Same, plus a sensitivity sweep over the guessed docking cost
+	python3 -m routing.evaluate 30 sweep
 
 clean-chart: ## Remove the generated caches and renders under routing/
 	rm -rf routing/cache routing/renders
