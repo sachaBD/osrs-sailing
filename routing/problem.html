@@ -1,0 +1,198 @@
+<title>Port Task Routing Problem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F1EEE6; --surface:#FBFAF6; --sunk:#E7E2D6; --edge:#D9D3C5;
+  --ink:#1B2430; --muted:#5D6B79; --faint:#8A94A0;
+  --accent:#B4472B; --sea:#2C4A6B; --flag:#8A6A1F;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1219; --surface:#131E29; --sunk:#0F1822; --edge:#26333F;
+    --ink:#E2E9F0; --muted:#93A3B2; --faint:#6B7B8A;
+    --accent:#FF6B57; --sea:#7FA8CC; --flag:#D8B45C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1219; --surface:#131E29; --sunk:#0F1822; --edge:#26333F;
+  --ink:#E2E9F0; --muted:#93A3B2; --faint:#6B7B8A;
+  --accent:#FF6B57; --sea:#7FA8CC; --flag:#D8B45C;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:16px;line-height:1.65}
+.wrap{max-width:1080px;margin:0 auto;padding:56px 24px 110px;display:flex;flex-direction:column;gap:52px}
+.prose{max-width:68ch}
+h1,h2{font-family:Spectral,Georgia,serif;font-weight:600;text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(2rem,5vw,2.9rem);letter-spacing:-.015em}
+h2{font-size:1.5rem;display:flex;align-items:baseline;gap:14px}
+h2 .no{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--accent);font-weight:500}
+h3{font-size:1rem;font-weight:600;margin:0}
+p{margin:0}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+.lede{font-size:1.12rem;color:var(--muted);margin-top:18px}
+header{border-bottom:1px solid var(--edge);padding-bottom:38px}
+section{display:flex;flex-direction:column;gap:18px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:.92rem;background:var(--sunk);
+  border-left:2px solid var(--accent);padding:16px 20px;border-radius:0 2px 2px 0;overflow-x:auto;color:var(--ink)}
+.scroll{overflow-x:auto;border:1px solid var(--edge);border-radius:3px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--edge);vertical-align:top}
+th{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:500;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+code,.m{font-family:"IBM Plex Mono",monospace;font-size:.87em}
+td code{white-space:nowrap}
+.tag{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:.16em .5em;border-radius:2px;white-space:nowrap;border:1px solid currentColor}
+.measure{color:var(--flag)} .known{color:var(--sea)} .open{color:var(--accent)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:1px;background:var(--edge);
+  border:1px solid var(--edge);border-radius:3px}
+.card{background:var(--surface);padding:20px 22px;display:flex;flex-direction:column;gap:9px}
+.card p{font-size:.92rem;color:var(--muted)}
+.pull{border-top:1px solid var(--edge);border-bottom:1px solid var(--edge);padding:24px 0;
+  font-family:Spectral,Georgia,serif;font-size:1.24rem;line-height:1.5;max-width:64ch}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:11px}
+ol.steps li{counter-increment:s;display:flex;gap:14px;align-items:baseline;font-size:.95rem}
+ol.steps li::before{content:counter(s);font-family:"IBM Plex Mono",monospace;font-size:.75rem;
+  color:var(--accent);border:1px solid var(--edge);border-radius:50%;width:1.9em;height:1.9em;
+  display:grid;place-items:center;flex:0 0 auto}
+ul.plain{margin:0;padding-left:1.15em;display:flex;flex-direction:column;gap:9px;color:var(--muted);font-size:.95rem}
+ul.plain strong{color:var(--ink)}
+.foot{font-size:.86rem;color:var(--faint);border-top:1px solid var(--edge);padding-top:20px}
+</style>
+<div class="wrap">
+<header>
+  <p class="eyebrow">Sailing &middot; specification</p>
+  <h1>Port Task Routing Problem</h1>
+  <p class="lede">What we are optimising, what the agent may do, and what it knows when it decides. Settled 28 August 2026. The canonical copy is <code>routing/PROBLEM.md</code> in the repo.</p>
+</header>
+
+<section class="prose">
+  <h2><span class="no">01</span> Objective</h2>
+  <p>Maximise <strong>XP per hour</strong>: the long-run average reward per unit time of a <em>continuing</em> process.</p>
+  <div class="eq">g = lim (T &rarr; &infin;)&nbsp; E[ total xp earned by T ] / T</div>
+  <p>This is a <strong>gain-optimal semi-Markov decision process</strong>. Actions have durations, decisions are made only in port, and there are no episodes. The handle is the &rho;-parametrisation: for a candidate rate &rho;, maximise the undiscounted sum of <code>xp&#8323; &minus; &rho;&middot;dt&#8323;</code>; the &rho; at which that optimum is exactly zero is the optimal gain. Bisect on &rho;.</p>
+  <p>Time in <strong>ticks</strong> (0.6&nbsp;s, the game&rsquo;s own quantum &mdash; integer arithmetic, no rounding drift). Reward in XP. Distance in game tiles is an <em>input to the time model</em>, never a state variable.</p>
+  <h3 style="margin-top:10px">Level is not stationary</h3>
+  <p>XP raises Sailing level, which changes both task capacity and which tasks and ports are legal. So <code>g</code> is a function of level, not a single number. Solve at a <strong>fixed level</strong> and treat the levelling curve as a sequence of such solutions &mdash; level moves slowly next to a task cycle.</p>
+</section>
+
+<section>
+  <h2><span class="no">02</span> Static model</h2>
+  <p class="prose" style="color:var(--muted)">Fixed for a solve. Thirty ports. None of this is state &mdash; it is the environment.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Symbol</th><th>Shape</th><th>Meaning</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>D</code></td><td>30&times;30</td><td>sail time between ports</td><td><span class="tag measure">measure</span> tiles known, tiles&rarr;ticks not</td></tr>
+      <tr><td><code>tp</code></td><td>30</td><td>teleport-to time, <code>inf</code> where unavailable</td><td><span class="tag measure">measure</span></td></tr>
+      <tr><td><code>rec</code></td><td>30</td><td>boat-recall time, <code>inf</code> where no shipwright</td><td><span class="tag measure">measure</span> flags known</td></tr>
+      <tr><td><code>t_dock</code></td><td>scalar</td><td>docking overhead per port entry</td><td><span class="tag measure">measure</span></td></tr>
+      <tr><td><code>t_board</code></td><td>scalar</td><td>reading and accepting at a board</td><td><span class="tag measure">measure</span></td></tr>
+      <tr><td><code>t_drop</code></td><td>scalar</td><td>abandoning a task</td><td><span class="tag measure">measure</span></td></tr>
+      <tr><td><code>board</code></td><td>30 bool</td><td>has a notice board &mdash; <strong>23 of 30</strong></td><td><span class="tag known">known</span></td></tr>
+      <tr><td><code>ship</code></td><td>30 bool</td><td>has a shipwright &mdash; <strong>16, all of them boards</strong></td><td><span class="tag known">known</span></td></tr>
+      <tr><td><code>dock_lvl</code></td><td>30</td><td>Sailing level to dock, range 1&ndash;76</td><td><span class="tag known">known</span></td></tr>
+      <tr><td><code>quest</code></td><td>30 bool</td><td>quest-gated &mdash; <strong>14 of 30</strong></td><td><span class="tag known">known</span> player config</td></tr>
+      <tr><td><code>C(level)</code></td><td>99</td><td>concurrent <strong>task</strong> capacity, 1&ndash;5</td><td><span class="tag measure">measure</span> thresholds</td></tr>
+      <tr><td><code>pool[p]</code></td><td>~20 each</td><td>tasks a board can offer</td><td><span class="tag known">known</span> 439 total</td></tr>
+    </tbody>
+  </table></div>
+  <p class="prose" style="color:var(--muted)">Each task carries <code>(board, origin, destination, xp, level, qty)</code>, and <code>board</code> is always either the origin (outbound, 273) or the destination (inbound, 166). XP runs 69 to 13,143, median 1,574.</p>
+  <div class="pull">A 190&times; spread in XP means <em>which</em> tasks you take dominates how efficiently you sail between them. The value is in the tail &mdash; which is the whole economic case for scouting.</div>
+</section>
+
+<section>
+  <h2><span class="no">03</span> State</h2>
+  <p class="prose" style="color:var(--muted)">The player and the boat are separate. That is the crux of the problem.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Symbol</th><th>Domain</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>loc_plr</code></td><td>1..30</td><td>which port the player is in</td></tr>
+      <tr><td><code>loc_boat</code></td><td>1..30</td><td>which port the boat is in</td></tr>
+      <tr><td><code>A</code></td><td>set, |A| &le; C</td><td>accepted tasks</td></tr>
+      <tr><td><code>L</code></td><td>subset of A</td><td>tasks whose cargo is aboard</td></tr>
+      <tr><td><code>O</code></td><td>30 &times; 8</td><td>offers read this epoch; unread entries unknown</td></tr>
+      <tr><td><code>k</code></td><td>0..7</td><td>completions since the last reroll</td></tr>
+      <tr><td><code>xp</code></td><td>&#8469;</td><td>total, hence level, hence capacity and eligibility</td></tr>
+    </tbody>
+  </table></div>
+  <p class="prose" style="color:var(--muted)">Initial state: <code>k = 0</code>, <code>A</code> and <code>L</code> empty, <code>O</code> entirely unread.</p>
+</section>
+
+<section>
+  <h2><span class="no">04</span> Actions</h2>
+  <p class="prose" style="color:var(--muted)">Preconditions are hard &mdash; an action not listed as legal cannot be taken.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Action</th><th>Precondition</th><th>Duration</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>Accept(t)</code></td><td><code>t</code> in <code>O[loc_plr]</code>, <code>|A| &lt; C</code>, level and dock met</td><td><code>t_board</code></td><td><code>A += t</code></td></tr>
+      <tr><td><code>Abandon(t)</code></td><td><code>t</code> in <code>A</code></td><td><code>t_drop</code></td><td><code>A -= t</code>, <code>L -= t</code>; does <strong>not</strong> advance <code>k</code></td></tr>
+      <tr><td><code>Sail(p)</code></td><td><code>loc_boat == loc_plr</code>, <code>p</code> dockable</td><td><code>D[loc_plr][p] + t_dock</code></td><td>both move to <code>p</code></td></tr>
+      <tr><td><code>Teleport(p)</code></td><td><code>tp[p] &lt; inf</code></td><td><code>tp[p]</code></td><td>player only; boat stays</td></tr>
+      <tr><td><code>Recall()</code></td><td><code>ship[loc_plr]</code></td><td><code>rec[loc_plr]</code></td><td><code>loc_boat = loc_plr</code>; <code>L = {}</code> &mdash; cargo lost, tasks survive</td></tr>
+    </tbody>
+  </table></div>
+  <p class="prose" style="color:var(--muted)">Sailing requires the boat to be with you. Accepting does not &mdash; and that is the whole point.</p>
+</section>
+
+<section>
+  <h2><span class="no">05</span> Transitions</h2>
+  <p class="prose" style="color:var(--muted)">Automatic effects, in this order, whenever the player is in port <code>p</code> &mdash; on arrival and after any <code>Accept</code>:</p>
+  <ol class="steps">
+    <li><strong>Load</strong>&nbsp;&mdash; every accepted task whose origin is <code>p</code>, boat present, joins <code>L</code>.</li>
+    <li><strong>Deliver</strong>&nbsp;&mdash; every loaded task whose destination is <code>p</code>: award XP, <code>k += 1</code>, drop from <code>A</code> and <code>L</code>.</li>
+    <li><strong>Reroll</strong>&nbsp;&mdash; if <code>k == 8</code>: redraw all 23 boards, clear <code>O</code>, set <code>k = 0</code>. <code>A</code> and <code>L</code> untouched.</li>
+    <li><strong>Reveal</strong>&nbsp;&mdash; if <code>p</code> has a board, write its true offers into <code>O[p]</code>.</li>
+  </ol>
+  <p class="prose" style="color:var(--muted)">Reveal comes last so a delivery that triggers a reroll leaves you looking at the <em>fresh</em> board. Loading is checked after <code>Accept</code> too, so accepting an outbound task while the boat is already in port loads it immediately.</p>
+</section>
+
+<section>
+  <h2><span class="no">06</span> What makes this hard</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>It does not decompose into episodes</h3>
+      <p>Treating one reroll cycle as an episode fails: <code>A</code> persists through the reroll, so the boundary is not a regeneration point. You can sit at <code>k = 7</code>, fill every slot from offers already scouted, then complete them across the boundary and start the next cycle several completions in, holding tasks the new offer set never contained.</p>
+      <p>&ldquo;Eight completions per reroll&rdquo; is an accounting invariant, not a planning budget.</p>
+    </div>
+    <div class="card">
+      <h3>Scouting perishes; accepted tasks do not</h3>
+      <p>A reroll destroys every board you read. Accepting is the only way to carry what you learned across the boundary &mdash; and it needs no boat, which is exactly why teleport and accept pair up.</p>
+      <p>Near <code>k = 7</code> that creates real pressure to fill every slot before the reroll burns your scouting. Against it, banking spends slots the fresh offers might have filled better. That trade-off should be <em>discovered</em>, not hand-coded.</p>
+    </div>
+    <div class="card">
+      <h3>Partial observability, and nothing else</h3>
+      <p>The only hidden information is boards not yet read this epoch. The only stochasticity in the whole process is the reroll draw. Between rerolls, given full information, this is a <strong>deterministic</strong> prize-collecting pickup-and-delivery problem with a capacity constraint.</p>
+      <p>The prior is small and already in our data: an unread board is a uniform 8-subset of its known pool of about twenty. Every pool holds at least eight, so a full draw is always possible.</p>
+    </div>
+    <div class="card">
+      <h3>No deadlocks, no failure</h3>
+      <p>There is always a legal teleport, so the agent can never be stranded without its boat. Voyages cannot capsize. Transitions are deterministic apart from the reroll.</p>
+      <p>Worth verifying once we have the teleport table: from every port there must be a teleport to some port with a shipwright.</p>
+    </div>
+  </div>
+</section>
+
+<section class="prose">
+  <h2><span class="no">07</span> What the solver has to be</h2>
+  <ul class="plain">
+    <li><strong>Not exact DP.</strong> <code>O</code> alone is 23 boards drawing 8 from ~20, times read/unread flags, times positions, times <code>A</code> and <code>L</code>.</li>
+    <li><strong>A real combinatorial solver for the deterministic core</strong> &mdash; branch and bound, beam search or CP over task selection and sequencing between rerolls.</li>
+    <li><strong>Sample-based planning across rerolls</strong> &mdash; determinise the unread boards, solve, act, re-plan. Sampling a fresh <code>O</code> is precisely what the environment does, so simulator and planner share machinery.</li>
+    <li><strong>The ratio objective via &rho;-parametrisation</strong>, not optimised directly.</li>
+  </ul>
+</section>
+
+<section class="prose">
+  <h2><span class="no">08</span> Still to settle</h2>
+  <ul class="plain">
+    <li><span class="tag measure">measure</span> &nbsp;In the game: tiles per tick; docking, board and abandon overheads; teleport destinations and times; recall times; capacity thresholds by level; the guaranteed-task rule.</li>
+    <li><span class="tag known">decide</span> &nbsp;By rule: the seven tasks with unknown XP; which quests to assume complete.</li>
+    <li><span class="tag open">open</span> &nbsp;Whether abandoning is free-standing or only an atomic swap when full, and whether reveal really comes after reroll.</li>
+  </ul>
+  <p class="foot">Nothing here is implemented. The sea chart in <code>routing/</code> supplies <code>D</code> in tiles; everything else in the static model is still symbolic.</p>
+</section>
+</div>

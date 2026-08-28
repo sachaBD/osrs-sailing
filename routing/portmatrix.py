@@ -149,12 +149,12 @@ def main() -> None:
     # Both directions are real sailable paths, so where they disagree the
     # shorter one is simply the better answer - not something to average.
     asymmetry = float(np.abs(table - table.T).max())
+    flip = table.T < table
+    table = np.minimum(table, table.T)
     for i, a in enumerate(ports):
         for j, b in enumerate(ports):
-            if table[j, i] < table[i, j]:
-                matrix.legs[a][b] = round(float(table[j, i]), 1)
-                if a != b:
-                    routes[a][b] = routes[b][a][::-1]
+            if a != b and flip[i, j]:
+                routes[a][b] = routes[b][a][::-1]
 
     # a shortest-path matrix must obey the triangle inequality; if it does not,
     # something is wrong with the graph rather than with the route search
@@ -172,6 +172,13 @@ def main() -> None:
     for i, a in enumerate(ports):
         for j, b in enumerate(ports):
             matrix.legs[a][b] = round(float(table[i, j]), 1)
+
+    # Closing a symmetric matrix keeps it symmetric, and rounding is symmetric
+    # too, so both properties are cheap to assert rather than merely intend.
+    ports, table = matrix.as_array()
+    residual = float(np.abs(table - table.T).max())
+    if residual > 0.0:
+        raise ChartError(f'matrix still asymmetric by {residual:.2f} tiles')
     closed = 0.0
     for k in range(len(ports)):
         closed = min(closed, float((table[:, k, None] + table[None, k, :] - table).min()))
@@ -190,7 +197,8 @@ def main() -> None:
     detour = off / straight[~np.eye(len(ports), dtype=bool)]
     print(f'{MATRIX}: {len(ports)} ports, {len(off) // 2} pairs')
     print(f'  symmetrised (worst disagreement {asymmetry:.1f} tiles); '
-          f'closed triangle inequality (was off by {before:.0f})')
+          f'closed triangle inequality (was off by {before:.0f}); '
+          f'symmetry and closure verified')
     print(f'  shortest {off.min():.0f} tiles, longest {off.max():.0f}, median {np.median(off):.0f}')
     print(f'  vs straight lines: median x{np.median(detour):.2f}, worst x{detour.max():.2f}')
     print(f'{ROUTES}: route geometry for drawing, every {STRIDE} tiles')

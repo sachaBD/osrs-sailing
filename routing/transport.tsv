@@ -1,0 +1,34 @@
+# How the player moves without the boat, per port.  EDIT ME.
+#
+# Sailing moves the boat.  This file is everything else: charter ships and
+# teleports, which move the *player* and leave the boat where it was.  That is
+# what makes scouting possible - you go and read boards, then rejoin the boat.
+#
+#   charter        y = a charter ship serves this port.  Sourced from the wiki
+#                  (oldschool.runescape.wiki/w/Charter_ship), which lists 21
+#                  destinations.  Fares run 200-5,200 gp; the wiki says travel
+#                  "takes only a few seconds".
+#   charter_req    what gates the charter destination, blank if nothing.
+#   teleport       best-known magic or item teleport landing at or near the
+#                  port.  UNVERIFIED - I have not confirmed these against the
+#                  game and several are a short walk from the dock rather than
+#                  on it.  Correct them.
+#   walk_ticks     ticks from where the teleport lands to the gangplank.
+#   ticks          total player-travel time.  ALL PLACEHOLDERS - nobody has
+#                  timed any of this.  Charter is written as 10 ticks (6s) on
+#                  the wiki's "a few seconds"; treat every number as a guess
+#                  until measured.
+#
+# Only ports with dock_level <= 30 are listed.  Add rows as the level rises.
+
+port	charter	charter_req	teleport	walk_ticks	ticks	confidence
+Ardougne	n		Ardougne Teleport (Magic 51) / Ardougne cloak	?	?	teleport unverified
+Brimhaven	y		charter only	0	10	charter from wiki
+Catherby	y		Camelot Teleport (Magic 45) + walk	?	10	charter from wiki
+Hosidius	n		Xeric's talisman / Book of the Dead	?	?	teleport unverified
+Land's End	y	enter Great Kourend	charter only	0	10	charter from wiki
+Musa Point	y		charter only	0	10	charter from wiki
+Port Khazard	y		charter only	0	10	charter from wiki
+Port Piscarilius	y	enter Great Kourend	Book of the Dead (Piscarilius)	?	10	charter from wiki
+Port Sarim	y		Amulet of glory (Draynor) + walk	?	10	charter from wiki
+The Pandemonium	y	Pandemonium quest	charter only	0	10	charter from wiki
