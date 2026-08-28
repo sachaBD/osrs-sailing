@@ -90,9 +90,15 @@ class Sim:
 
             arriving = np.flatnonzero(filled & st.loaded & (inst.task_dest[st.held] == port))
             for slot in arriving:
-                st.xp += int(inst.task_xp[st.held[slot]])
+                task = int(st.held[slot])
+                st.xp += int(inst.task_xp[task])
                 st.held[slot] = NONE
                 st.loaded[slot] = False
+                # a finished task leaves the board it came from; without this
+                # the same short run can be farmed until the reroll
+                board = int(inst.task_board[task])
+                self._true_offers[board][self._true_offers[board] == task] = NONE
+                st.offers[board][st.offers[board] == task] = NONE
                 st.completions += 1
                 if st.completions >= inst.params.reroll_completions:
                     self._reroll()

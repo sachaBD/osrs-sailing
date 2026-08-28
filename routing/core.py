@@ -21,7 +21,8 @@ from dataclasses import dataclass
 from .instance import NONE, Instance
 
 Held = tuple[tuple[int, bool], ...]
-SearchState = tuple[int, int, Held, int, int]
+# player, boat, held, boards read (bitmask), completions, tasks finished (bitmask)
+SearchState = tuple[int, int, Held, int, int, int]
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class Core:
     has_board: tuple[bool, ...]
     origin: tuple[int, ...]
     dest: tuple[int, ...]
+    board_of: tuple[int, ...]
     xp: tuple[int, ...]
     offers: tuple[tuple[int, ...], ...]   # what each board holds, if visited
     t_board: int
@@ -54,6 +56,7 @@ class Core:
             recall=tuple(int(v) for v in instance.recall),
             has_board=tuple(bool(v) for v in instance.has_board),
             origin=tuple(int(v) for v in instance.task_origin),
+            board_of=tuple(int(v) for v in instance.task_board),
             dest=tuple(int(v) for v in instance.task_dest),
             xp=tuple(int(v) for v in instance.task_xp),
             offers=offers, t_board=params.t_board, t_drop=params.t_drop,
@@ -65,7 +68,7 @@ class Core:
 
     def settle(self, state: SearchState) -> tuple[SearchState, int]:
         """Load, deliver, reroll, reveal. Returns the new state and XP won."""
-        player, boat, held, seen, k = state
+        player, boat, held, seen, k, gone = state
         gained = 0
         if boat == player and held:
             kept: list[tuple[int, bool]] = []
@@ -74,32 +77,36 @@ class Core:
                     loaded = True
                 if loaded and self.dest[task] == player:
                     gained += self.xp[task]
+                    gone |= 1 << task     # it leaves the board it came from
                     k += 1
                     if k >= self.reroll:
-                        k, seen = 0, 0   # every board goes stale at once
+                        k, seen, gone = 0, 0, 0   # every board redraws at once
                 else:
                     kept.append((task, loaded))
             held = tuple(sorted(kept))
         if self.has_board[player]:
             seen |= 1 << player
-        return (player, boat, held, seen, k), gained
+        return (player, boat, held, seen, k, gone), gained
 
     def moves(self, state: SearchState, explore: bool) -> list[tuple[int, int]]:
         """Legal moves worth trying, cheapest first. Kinds match sim.py."""
-        player, boat, held, seen, _ = state
+        player, boat, held, seen, _, gone = state
         taken = {task for task, _ in held}
         out: list[tuple[int, int]] = []
 
+        def live(port: int) -> tuple[int, ...]:
+            return tuple(t for t in self.offers[port] if not gone >> t & 1)
+
         if len(held) < self.capacity and seen >> player & 1:
-            out += [(0, t) for t in self.offers[player] if t not in taken]
+            out += [(0, t) for t in live(player) if t not in taken]
 
         # only sail somewhere that has cargo to drop, work to pick up, or news
         useful = {self.dest[t] if loaded else self.origin[t] for t, loaded in held}
         if len(held) < self.capacity:
             useful |= {p for p in range(self.n_ports)
                        if self.has_board[p] and not seen >> p & 1}
-            useful |= {self.origin[t] for t in self.offers[player]
-                       if seen >> player & 1 and t not in taken}
+            useful |= {self.origin[t] for t in (live(player) if seen >> player & 1 else ())
+                       if t not in taken}
         useful.discard(player)
         if boat == player:
             out += sorted(((2, p) for p in useful), key=lambda m: self.sail[player][m[1]])
@@ -118,7 +125,7 @@ class Core:
 
     def apply(self, state: SearchState, move: tuple[int, int]) -> tuple[SearchState, int, int]:
         """-> new state, XP won, ticks spent."""
-        player, boat, held, seen, k = state
+        player, boat, held, seen, k, gone = state
         kind, arg = move
         if kind == 0:
             held, cost = tuple(sorted(held + ((arg, False),))), self.t_board
@@ -135,5 +142,5 @@ class Core:
             cost = self.recall[player]
             boat = player
             held = tuple((t, False) for t, l in held)
-        state, gained = self.settle((player, boat, held, seen, k))
+        state, gained = self.settle((player, boat, held, seen, k, gone))
         return state, gained, cost

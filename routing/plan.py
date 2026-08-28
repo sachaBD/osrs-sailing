@@ -65,7 +65,9 @@ def _start(sim: Sim) -> SearchState:
     held = tuple(sorted((int(t), bool(l)) for t, l in zip(state.held, state.loaded)
                         if t != -1))
     seen = sum(1 << port for port, read in enumerate(state.seen) if read)
-    return (int(state.port_player), int(state.port_boat), held, seen, int(state.completions))
+    # a task already off the board simply is not in `offers`, so `gone` starts empty
+    return (int(state.port_player), int(state.port_boat), held, seen,
+            int(state.completions), 0)
 
 
 def _optimistic(core: Core, state: SearchState, left: int, rho: float) -> float:
@@ -76,10 +78,10 @@ def _optimistic(core: Core, state: SearchState, left: int, rho: float) -> float:
     and collect a prize, and a bound that ignored those would cut the very
     branches that use the extra information. Loose is survivable, low is not.
     """
-    player, boat, held, seen, _ = state
+    player, boat, held, seen, _, gone = state
     prizes = [core.xp[t] for t, _ in held]
     for port in range(core.n_ports):
-        prizes += [core.xp[t] for t in core.offers[port]]
+        prizes += [core.xp[t] for t in core.offers[port] if not gone >> t & 1]
     best = sum(sorted(prizes, reverse=True)[:left])
     travel = min((core.sail[boat][core.dest[t] if l else core.origin[t]]
                   for t, l in held

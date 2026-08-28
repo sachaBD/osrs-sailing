@@ -74,3 +74,24 @@ def main(argv: list[str]) -> None:
 
 if __name__ == '__main__':
     main(sys.argv[1:])
+
+
+def calibrate(instance: Instance, make_policy, rounds: int = 6, seeds: int = 12,
+              horizon: int = HORIZON, start: int = 0,
+              rho: float = 1.5) -> tuple[float, float]:
+    """Drive rho to the rate the policy actually achieves. -> (rho, xp/hr).
+
+    This is not tuning. The planner maximises `xp - rho*ticks`, which rewrites
+    as `ticks * (rate - rho)`: whenever a plan beats rho, its value *grows with
+    how long it takes*, so a mis-set rho makes the search prefer longer routes
+    for their own sake. The bias disappears only where rho equals the rate the
+    policy really sustains, and that is a fixed point, not a guess.
+    """
+    rate = 0.0
+    for _ in range(rounds):
+        rate, _ = measure(instance, lambda: make_policy(rho), seeds, horizon, start)
+        settled = rate * TICK / 3600
+        if abs(settled - rho) < 0.02:
+            break
+        rho = settled
+    return rho, rate
