@@ -166,22 +166,38 @@ class Sim:
         self._settle()
         return st.xp - before_xp, cost
 
-    def clone(self, blind: bool = True) -> Sim:
+    def clone(self, offers: str = 'blind',
+              rng: np.random.Generator | None = None) -> Sim:
         """A detached copy, for search to play forward without consequence.
 
-        The planner explores by stepping clones, so it can never disagree with
-        the real dynamics - there is only one implementation of them.
+        Search steps clones, so it can never disagree with the real dynamics -
+        there is only one implementation of them. What it may *see* is the
+        choice here, and it is the whole difference between the layers:
 
-        `blind` empties the boards the player has not read, so that sailing to
-        one during the search reveals nothing. Without it the search sees the
-        true offers everywhere the moment it simulates arriving, and is quietly
-        solving the fully observable problem instead of this one.
+        `blind`   unread boards hold nothing, so sailing to one reveals
+                  nothing. Plans only over what the agent has actually read.
+        `sample`  unread boards are drawn from their own pools. One guess at
+                  the world, which is how the explorer prices going to look.
+        `oracle`  the real offers everywhere. Not playable; a ceiling.
         """
         twin = Sim(self.instance, self.rng)
         twin.state = self.state.copy()
-        twin._true_offers = self._true_offers.copy() if blind else self._true_offers
-        if blind:
-            twin._true_offers[~self.state.seen] = NONE
+        if offers == 'oracle':
+            twin._true_offers = self._true_offers
+            return twin
+
+        twin._true_offers = self._true_offers.copy()
+        unread = ~self.state.seen
+        if offers == 'blind':
+            twin._true_offers[unread] = NONE
+        elif offers == 'sample':
+            draw = rng or self.rng
+            inst = self.instance
+            for port in np.flatnonzero(unread & inst.has_board):
+                twin._true_offers[port] = draw.choice(
+                    inst.board_pool(port), size=inst.params.courier_per_board, replace=False)
+        else:
+            raise ModelError(f'unknown offer view {offers!r}')
         return twin
 
     def run(self, policy, horizon: int) -> State:

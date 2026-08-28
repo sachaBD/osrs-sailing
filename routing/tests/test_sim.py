@@ -147,9 +147,9 @@ class TestPlanner(unittest.TestCase):
     def test_a_plan_is_legal_end_to_end(self):
         from routing.plan import plan
         sim = _sim(start=8)
-        found = plan(sim, deliveries=3, node_budget=3000)
+        found = plan(sim, deliveries=3, node_budget=3000, offers='oracle', explore=True)
         self.assertTrue(found.actions)
-        twin = sim.clone()
+        twin = sim.clone('oracle')
         for action in found.actions:
             legal = twin.legal_actions()
             self.assertTrue(((legal[:, 0] == action[0]) & (legal[:, 1] == action[1])).any())
@@ -158,10 +158,12 @@ class TestPlanner(unittest.TestCase):
     def test_the_optimistic_bound_never_undershoots(self):
         # branch and bound is only correct while the bound is admissible, so
         # check it dominates what a real continuation actually achieves
-        from routing.plan import plan, _optimistic, RHO
+        from routing.plan import RHO, _optimistic, _start, _view, plan
         sim = _sim(start=8)
-        bound = _optimistic(sim, 3, RHO)
-        found = plan(sim, rho=RHO, deliveries=3, node_budget=8000)
+        core = _view(sim, 'oracle', np.random.default_rng(0))
+        state, _ = core.settle(_start(sim))
+        bound = _optimistic(core, state, 3, RHO)
+        found = plan(sim, rho=RHO, deliveries=3, node_budget=8000, offers='oracle')
         self.assertGreaterEqual(bound + 1e-6, found.value)
 
     def test_planner_is_competitive_with_greedy(self):
@@ -176,9 +178,61 @@ class TestPlanner(unittest.TestCase):
                              seeds=4, horizon=8000, start=8)
         self.assertGreater(planned, 0.8 * greedy)
 
-    def test_a_blind_clone_hides_boards_never_visited(self):
+    def test_the_search_sees_only_what_its_view_allows(self):
+        from routing.plan import _view
         sim = _sim(start=8)
-        blind, cheating = sim.clone(blind=True), sim.clone(blind=False)
-        visible = int(sim.state.seen.sum())
-        self.assertEqual(int((blind._true_offers != NONE).any(axis=1).sum()), visible)
-        self.assertGreater(int((cheating._true_offers != NONE).any(axis=1).sum()), visible)
+        rng = np.random.default_rng(0)
+        filled = lambda core: sum(1 for row in core.offers if row)
+        self.assertEqual(filled(_view(sim, 'blind', rng)), int(sim.state.seen.sum()))
+        self.assertGreater(filled(_view(sim, 'sample', rng)), int(sim.state.seen.sum()))
+        self.assertGreater(filled(_view(sim, 'oracle', rng)), int(sim.state.seen.sum()))
+
+
+class TestCoreMatchesSim(unittest.TestCase):
+    def test_the_two_dynamics_agree(self):
+        # core.py restates sim.py's dynamics in scalars for speed; the whole
+        # licence for that duplication is this test
+        from routing.core import Core
+        from routing.plan import _start, _view
+
+        for seed in range(6):
+            sim = _sim(seed, start=8)
+            rng = np.random.default_rng(seed)
+            core = _view(sim, 'oracle', rng)
+            state, _ = core.settle(_start(sim))
+
+            for _ in range(60):
+                moves = core.moves(state, explore=True)
+                legal = sim.legal_actions()
+                shared = [m for m in moves
+                          if ((legal[:, 0] == m[0]) & (legal[:, 1] == m[1])).any()]
+                if not shared:
+                    break
+                move = shared[rng.integers(len(shared))]
+                state, won, cost = core.apply(state, move)
+                gained, spent = sim.step(move)
+                self.assertEqual(won, gained, f'xp disagrees after {move}')
+                self.assertEqual(cost, spent, f'ticks disagree after {move}')
+                self.assertEqual(state[0], sim.state.port_player)
+                self.assertEqual(state[1], sim.state.port_boat)
+                self.assertEqual(sorted(t for t, _ in state[2]),
+                                 sorted(int(t) for t in sim.state.held if t != NONE))
+                self.assertEqual(state[4], sim.state.completions)
+
+
+class TestBound(unittest.TestCase):
+    def test_the_bound_dominates_every_reachable_continuation(self):
+        # an inadmissible bound silently prunes the optimum, which shows up as
+        # better information making the planner worse rather than as a crash
+        from routing.plan import RHO, _optimistic, _start, _view, plan
+        for view in ('blind', 'sample', 'oracle'):
+            for seed in range(4):
+                sim = _sim(seed, start=8)
+                rng = np.random.default_rng(seed)
+                core = _view(sim, view, rng)
+                state, _ = core.settle(_start(sim))
+                bound = _optimistic(core, state, 3, RHO)
+                found = plan(sim, rho=RHO, deliveries=3, node_budget=20_000,
+                             offers=view, explore=True, rng=np.random.default_rng(seed))
+                self.assertGreaterEqual(bound + 1e-6, found.value,
+                                        f'{view} seed {seed}')

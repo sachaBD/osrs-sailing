@@ -26,8 +26,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .instance import NONE, Instance
-from .sim import ACCEPT, SAIL, Sim
+from .core import Core, SearchState
+from .sim import SAIL, Sim
 
 # xp per tick. 1.5 is roughly the best rate the baselines reach, so the
 # planner starts out believing it can do about as well as greedy.
@@ -40,145 +40,169 @@ class Plan:
     actions: list[tuple[int, int]]
 
 
-def _state_key(sim: Sim) -> tuple:
+def _view(sim: Sim, offers: str, rng: np.random.Generator) -> Core:
+    """Flatten the instance plus one guess at the boards not yet read."""
+    inst, state = sim.instance, sim.state
+    rows = []
+    for port in range(inst.n_ports):
+        if not inst.has_board[port]:
+            rows.append(())
+            continue
+        if state.seen[port] or offers == 'oracle':
+            drawn = sim._true_offers[port]
+        elif offers == 'sample':
+            drawn = rng.choice(inst.board_pool(port),
+                               size=inst.params.courier_per_board, replace=False)
+        else:
+            drawn = []
+        rows.append(tuple(int(t) for t in drawn
+                          if t != -1 and inst.task_eligible[t]))
+    return Core.build(inst, tuple(rows))
+
+
+def _start(sim: Sim) -> SearchState:
     state = sim.state
-    held = tuple(sorted(zip(state.held.tolist(), state.loaded.tolist())))
-    return state.port_player, state.port_boat, held, state.completions
+    held = tuple(sorted((int(t), bool(l)) for t, l in zip(state.held, state.loaded)
+                        if t != -1))
+    seen = sum(1 << port for port, read in enumerate(state.seen) if read)
+    return (int(state.port_player), int(state.port_boat), held, seen, int(state.completions))
 
 
-def _optimistic(sim: Sim, deliveries_left: int, rho: float) -> float:
-    """An upper bound on what the rest of the plan can add. Must never undershoot.
+def _optimistic(core: Core, state: SearchState, left: int, rho: float) -> float:
+    """Upper bound on what the rest can add. Must never undershoot.
 
-    XP side: the best `deliveries_left` prizes still reachable, routing ignored.
-    Time side: the ship must at least reach the nearest thing it still needs,
-    which the metric matrix makes a valid lower bound on remaining travel.
+    Every board the search could still reach counts, not only those already
+    read: under a sampled or oracle view the search can sail somewhere unread
+    and collect a prize, and a bound that ignored those would cut the very
+    branches that use the extra information. Loose is survivable, low is not.
     """
-    inst, state = sim.instance, sim.state
-    held = state.held[state.held != NONE]
-
-    prizes = list(inst.task_xp[held]) if len(held) else []
-    offered = state.offers[state.seen]
-    if offered.size:
-        live = offered[(offered != NONE) & inst.task_eligible[offered]]
-        prizes += list(inst.task_xp[live])
-    best_xp = sum(sorted(prizes, reverse=True)[:deliveries_left])
-
-    if len(held):
-        wanted = np.where(state.loaded[state.held != NONE],
-                          inst.task_dest[held], inst.task_origin[held])
-        wanted = wanted[wanted != state.port_boat]
-        travel = int(inst.sail[state.port_boat, wanted].min()) if wanted.size else 0
-    else:
-        travel = 0
-    return best_xp - rho * travel
+    player, boat, held, seen, _ = state
+    prizes = [core.xp[t] for t, _ in held]
+    for port in range(core.n_ports):
+        prizes += [core.xp[t] for t in core.offers[port]]
+    best = sum(sorted(prizes, reverse=True)[:left])
+    travel = min((core.sail[boat][core.dest[t] if l else core.origin[t]]
+                  for t, l in held
+                  if (core.dest[t] if l else core.origin[t]) != boat), default=0)
+    return best - rho * travel
 
 
-def _worth_trying(sim: Sim) -> list[np.ndarray]:
-    """Legal accepts, plus only the sails that could possibly matter.
+def plan(sim: Sim, rho: float = RHO, deliveries: int = 3, node_budget: int = 20_000,
+         offers: str = 'blind', explore: bool = False,
+         rng: np.random.Generator | None = None) -> Plan:
+    """Best sequence of moves out to `deliveries` completions.
 
-    Sailing somewhere with no cargo to drop, nothing to pick up and no unread
-    board is never part of a good plan, and letting the search consider all
-    nine ports at every node is most of its cost. Cheapest moves come first,
-    because a good incumbent found early prunes everything after it.
+    `offers` picks what the search may see on unread boards - blind, one
+    sampled guess, or the truth. `explore` lets it charter and recall, which
+    is what makes going to look at a board a move it can weigh rather than
+    one it can only stumble into.
     """
-    inst, state = sim.instance, sim.state
-    legal = sim.legal_actions()
-    accepts = [a for a in legal if a[0] == ACCEPT]
-
-    held = state.held[state.held != NONE]
-    useful: set[int] = set()
-    if len(held):
-        useful.update(np.where(state.loaded[state.held != NONE],
-                               inst.task_dest[held], inst.task_origin[held]).tolist())
-    if state.free_slots:
-        offered = state.offers[state.seen]
-        if offered.size:
-            live = offered[(offered != NONE) & inst.task_eligible[offered]]
-            useful.update(inst.task_origin[live].tolist())
-        useful.update(np.flatnonzero(inst.has_board & ~state.seen).tolist())
-    useful.discard(state.port_player)
-
-    sails = [a for a in legal if a[0] == SAIL and int(a[1]) in useful]
-    sails.sort(key=lambda a: inst.sail[state.port_player, a[1]])
-    return accepts + sails
-
-
-def plan(sim: Sim, rho: float = RHO, deliveries: int = 3,
-         node_budget: int = 20_000, blind: bool = True) -> Plan:
-    """Best sequence of accepts and sails, out to `deliveries` completions.
-
-    With `blind` false the search reads boards the agent has not visited. That
-    is cheating, and deliberately so: it bounds what any amount of scouting or
-    belief sampling could be worth, because it is what a policy that already
-    knew everything would do.
-    """
-    inst = sim.instance
-    best = Plan(-np.inf, [])          # the best plan that did the whole job
-    partial = Plan(-np.inf, [])       # the deepest one found, if none did
-    deepest = [-1]
+    core = _view(sim, offers, rng or np.random.default_rng())
+    best = Plan(-np.inf, [])
+    partial = Plan(-np.inf, [])
+    deepest = -1
     seen: dict[tuple, float] = {}
-    budget = [node_budget]
+    budget = node_budget
 
-    def descend(node: Sim, done: int, gained: int, spent: int,
+    def descend(state: SearchState, done: int, gained: int, spent: int,
                 trail: list[tuple[int, int]]) -> None:
+        nonlocal best, partial, deepest, budget
         value = gained - rho * spent
         if done >= deliveries:
+            # Charge for where the plan leaves the ship. Without this a fixed
+            # delivery count is myopic in a way better information makes worse:
+            # the search reaches further for its two deliveries and strands
+            # itself somewhere with nothing to do next.
+            value -= rho * core.to_board[state[1]]
             if value > best.value:
-                best.value, best.actions = value, list(trail)
+                best = Plan(value, list(trail))
             return
-        if (done, value) > (deepest[0], partial.value):
-            deepest[0], partial.value, partial.actions = done, value, list(trail)
-        if budget[0] <= 0:
+        if (done, value) > (deepest, partial.value):
+            deepest, partial = done, Plan(value, list(trail))
+        if budget <= 0 or value + _optimistic(core, state, deliveries - done, rho) <= best.value:
             return
-        if value + _optimistic(node, deliveries - done, rho) <= best.value:
-            return
-
-        key = (_state_key(node), done)
-        if seen.get(key, -np.inf) >= value:
+        key = (state, done)
+        if seen.get(key, -1e18) >= value:
             return
         seen[key] = value
 
-        actions = _worth_trying(node)
-        for action in actions:
-            budget[0] -= 1
-            if budget[0] <= 0:
+        for move in core.moves(state, explore):
+            budget -= 1
+            if budget <= 0:
                 return
-            child = node.clone()
-            xp, cost = child.step_unchecked(action)
-            trail.append((int(action[0]), int(action[1])))
-            descend(child, done + (xp > 0), gained + xp, spent + cost, trail)
+            nxt, won, cost = core.apply(state, move)
+            trail.append(move)
+            descend(nxt, done + (won > 0), gained + won, spent + cost, trail)
             trail.pop()
 
-    descend(sim.clone(blind), 0, 0, 0, [])
+    start, _ = core.settle(_start(sim))
+    descend(start, 0, 0, 0, [])
     return best if best.actions else partial
 
 
 class Planner:
-    """Plays out a plan, and re-plans only when what it knows has changed.
+    """Plans, plays the plan out, and re-plans when what it knows changes.
 
     Re-planning every step would be honest and far too slow. Nothing can
     invalidate a plan except learning something, so the trigger is a change in
     the set of boards read - which is also exactly when a reroll has happened,
     since a reroll clears them all.
+
+    `scenarios` above one turns it into the explorer: the unread boards are
+    guessed at several times over, each guess is planned separately, and the
+    first action that looks best across all of them is played. That is what
+    lets it decide to go and *look*, which a planner that treats unread boards
+    as empty can never have a reason to do.
     """
 
-    def __init__(self, rho: float = RHO, deliveries: int = 3,
-                 node_budget: int = 4_000, blind: bool = True) -> None:
+    def __init__(self, rho: float = RHO, deliveries: int = 3, node_budget: int = 4_000,
+                 offers: str = 'blind', explore: bool = False, scenarios: int = 1,
+                 seed: int = 0) -> None:
         self.rho = rho
         self.deliveries = deliveries
         self.node_budget = node_budget
-        self.blind = blind
+        self.offers = offers
+        self.explore = explore
+        self.scenarios = scenarios
+        self.rng = np.random.default_rng(seed)
         self._queued: list[tuple[int, int]] = []
         self._knowledge: bytes = b''
         self.plans = 0
 
+    def _replan(self, sim: Sim) -> list[tuple[int, int]]:
+        """Plan each guess separately, then take the move they agree on.
+
+        Not the best-scoring plan across guesses: that picks whichever guess
+        was luckiest, so sampling harder makes the agent more credulous rather
+        than better informed. Consensus on the first move is the point of
+        sampling at all - a move that only pays under one guess loses to one
+        that pays under most.
+        """
+        self.plans += 1
+        budget = max(self.node_budget // self.scenarios, 400)
+        drafts = [plan(sim, self.rho, self.deliveries, budget,
+                       self.offers, self.explore, self.rng)
+                  for _ in range(self.scenarios)]
+        drafts = [d for d in drafts if d.actions]
+        if not drafts:
+            return []
+        if self.scenarios == 1:
+            return drafts[0].actions
+
+        votes: dict[tuple[int, int], list[float]] = {}
+        for draft in drafts:
+            votes.setdefault(draft.actions[0], []).append(draft.value)
+        winner = max(votes, key=lambda move: (len(votes[move]), np.mean(votes[move])))
+        # play out the plan that voted for the winner and scored worst under it,
+        # so the committed route is one that survives a pessimistic guess
+        return min((d for d in drafts if d.actions[0] == winner),
+                   key=lambda d: d.value).actions
+
     def __call__(self, sim: Sim) -> np.ndarray:
         knowledge = sim.state.seen.tobytes()
         if not self._queued or knowledge != self._knowledge:
-            self._queued = plan(sim, self.rho, self.deliveries,
-                                self.node_budget, self.blind).actions
+            self._queued = self._replan(sim)
             self._knowledge = knowledge
-            self.plans += 1
 
         legal = sim.legal_actions()
         if self._queued:
@@ -203,15 +227,18 @@ def _fallback(sim: Sim, legal: np.ndarray) -> np.ndarray:
     return sails[int(np.argmin(cost))]
 
 
-def planner(rho: float = RHO, deliveries: int = 3, node_budget: int = 4_000) -> Planner:
-    """Plans over what it has actually seen. The honest Layer 2 policy."""
-    return Planner(rho, deliveries, node_budget, blind=True)
+def planner(rho: float = RHO, deliveries: int = 2, node_budget: int = 3_000) -> Planner:
+    """Plans over what it has actually read. Sails; never charters."""
+    return Planner(rho, deliveries, node_budget, offers='blind')
 
 
-def oracle(rho: float = RHO, deliveries: int = 3, node_budget: int = 4_000) -> Planner:
-    """The same search, allowed to read every board. Not a policy - a ceiling.
+def explorer(rho: float = RHO, deliveries: int = 3, node_budget: int = 6_000,
+             scenarios: int = 4, seed: int = 0) -> Planner:
+    """Guesses at the boards it has not read, and may charter off to look."""
+    return Planner(rho, deliveries, node_budget, offers='sample',
+                   explore=True, scenarios=scenarios, seed=seed)
 
-    The gap between this and `planner` is the value of the information the
-    agent does not have, which is what Layer 3 of APPROACH.md exists to buy.
-    """
-    return Planner(rho, deliveries, node_budget, blind=False)
+
+def oracle(rho: float = RHO, deliveries: int = 3, node_budget: int = 6_000) -> Planner:
+    """The same search, reading every board. Not a policy - a ceiling."""
+    return Planner(rho, deliveries, node_budget, offers='oracle', explore=True)

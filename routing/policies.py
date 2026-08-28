@@ -128,6 +128,11 @@ def _planner():
     return planner()
 
 
+def _explorer():
+    from .plan import explorer
+    return explorer()
+
+
 def _oracle():
     from .plan import oracle
     return oracle()
@@ -141,4 +146,4 @@ ALL = {
 }
 
 # policies that carry state between steps, so each run needs a fresh one
-FACTORIES = {'planner': _planner, 'oracle (cheats)': _oracle}
+FACTORIES = {'planner': _planner, 'explorer': _explorer, 'oracle (cheats)': _oracle}

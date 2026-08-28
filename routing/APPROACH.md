@@ -103,9 +103,39 @@ extra information is unreachable. The comparison is vacuous at this horizon
 rather than informative, and measuring the value of information properly needs
 the deeper search that Layer 2 has just shown does not pay on its own.
 
-**Conclusion: the bottleneck at level 30 is information, not optimisation.**
-Layer 2 is done and it did not help. That is a real finding, and it is the
-argument for Layer 3 rather than for a better Layer 2.
+Rewritten since, over a scalar core rather than numpy (`core.py`): at three
+held tasks and two port indices, numpy's per-call overhead swamps the
+arithmetic, and moving to plain ints and tuples was worth 12x. An episode now
+plans in 0.4 seconds rather than 8.
+
+    greedy_xp_per_tick     9,983 +/- 652     17 ms/episode
+    planner, 2 deliveries  10,589 +/- 306   410 ms/episode
+
+So search does beat greedy, by about 6%, once it is fast enough to measure
+properly.
+
+### The thing that is still wrong
+
+Giving the planner *more true information* makes it worse. An oracle that
+reads every board plans strictly better sequences - its plan value beats the
+blind planner's in every state tested, often several times over - and then
+scores lower over an episode. That ordering is impossible for a sound
+planner, so something in how plans are executed is wrong, not in how they are
+found.
+
+Two causes found and fixed, neither sufficient. The bound only counted prizes
+on boards already read, which is admissible when unread boards hold nothing
+but not when the search can sail to one and collect, so it was pruning the
+branches that used the extra information. And a fixed delivery count with no
+terminal value is myopic: the plan reaches further for its two deliveries and
+strands the ship somewhere with nothing to do, which better information makes
+worse rather than better. Charging for the distance from where a plan ends to
+the nearest board recovered part of the gap and not all of it.
+
+What is left is the missing piece the layering predicted: receding-horizon
+control needs a value function for what happens after the horizon, and a
+distance proxy is a poor one. That is Layer 5's job, and it is now the
+argument for Layer 5 rather than a curiosity.
 
 ## Layer 3 - the uncertainty
 
