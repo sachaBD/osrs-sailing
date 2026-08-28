@@ -74,6 +74,39 @@ gives ground truth. No later result should be believed if it does not match or
 beat exact search on instances small enough to solve exactly.
 
 
+### What it measured
+
+Built and measured at level 30, 8 seeds of 2 hours each, against the greedy
+baseline:
+
+| policy | xp/hr | |
+| --- | --- | --- |
+| greedy_xp_per_tick | 10,331 +/- 797 | |
+| planner, 2 deliveries | **10,417 +/- 275** | parity on the mean, a third the variance |
+| planner, 3 deliveries | 9,628 +/- 985 | longer plans are *worse* |
+
+So search reaches parity with greedy and no more, at about 8 seconds of
+planning per simulated episode against greedy's nothing. The plans themselves
+are clearly better - it finds chains that deliver two tasks on one leg, which
+greedy cannot see - but the episode rate does not move.
+
+The reason is in the third row. A longer plan is worse, and higher `rho`
+(which biases toward short, quick tasks) is better; both say the same thing.
+Committing to a route ahead of time costs more than the leg-sharing gains,
+because the agent keeps learning things - a new board, a reroll - that the
+plan did not know about.
+
+An oracle variant that reads every board scored *identically*, to the digit.
+That is not a bug: at a two-delivery horizon the search finds a plan out of the
+offers underfoot before it ever simulates sailing to an unread board, so the
+extra information is unreachable. The comparison is vacuous at this horizon
+rather than informative, and measuring the value of information properly needs
+the deeper search that Layer 2 has just shown does not pay on its own.
+
+**Conclusion: the bottleneck at level 30 is information, not optimisation.**
+Layer 2 is done and it did not help. That is a real finding, and it is the
+argument for Layer 3 rather than for a better Layer 2.
+
 ## Layer 3 - the uncertainty
 
 Now the offers are not all known. Two approaches, and the difference between

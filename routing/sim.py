@@ -166,15 +166,22 @@ class Sim:
         self._settle()
         return st.xp - before_xp, cost
 
-    def clone(self) -> Sim:
+    def clone(self, blind: bool = True) -> Sim:
         """A detached copy, for search to play forward without consequence.
 
         The planner explores by stepping clones, so it can never disagree with
         the real dynamics - there is only one implementation of them.
+
+        `blind` empties the boards the player has not read, so that sailing to
+        one during the search reveals nothing. Without it the search sees the
+        true offers everywhere the moment it simulates arriving, and is quietly
+        solving the fully observable problem instead of this one.
         """
         twin = Sim(self.instance, self.rng)
         twin.state = self.state.copy()
-        twin._true_offers = self._true_offers
+        twin._true_offers = self._true_offers.copy() if blind else self._true_offers
+        if blind:
+            twin._true_offers[~self.state.seen] = NONE
         return twin
 
     def run(self, policy, horizon: int) -> State:

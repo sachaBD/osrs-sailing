@@ -12,6 +12,13 @@ Objective is `xp - rho * ticks`, the rho-parametrisation from PROBLEM.md: a
 plain sum of XP would sail across the map for a big number, and a plain ratio
 cannot be summed over a sequence. `rho` is the exchange rate between the two,
 in XP per tick, and is the rate the agent believes it can otherwise sustain.
+
+Plans are only compared once they have made the *same* number of deliveries.
+That matters more than it sounds: with rho set near the rate the agent already
+achieves, a typical task scores barely above zero, so an "up to N deliveries"
+objective makes the empty plan competitive and the planner sits in port. Fixing
+the work and choosing the cheapest way to do it removes that degenerate option
+and is the honest comparison anyway.
 """
 from __future__ import annotations
 
@@ -97,19 +104,31 @@ def _worth_trying(sim: Sim) -> list[np.ndarray]:
 
 
 def plan(sim: Sim, rho: float = RHO, deliveries: int = 3,
-         node_budget: int = 20_000) -> Plan:
-    """Best sequence of accepts and sails, out to `deliveries` completions."""
+         node_budget: int = 20_000, blind: bool = True) -> Plan:
+    """Best sequence of accepts and sails, out to `deliveries` completions.
+
+    With `blind` false the search reads boards the agent has not visited. That
+    is cheating, and deliberately so: it bounds what any amount of scouting or
+    belief sampling could be worth, because it is what a policy that already
+    knew everything would do.
+    """
     inst = sim.instance
-    best = Plan(-np.inf, [])
+    best = Plan(-np.inf, [])          # the best plan that did the whole job
+    partial = Plan(-np.inf, [])       # the deepest one found, if none did
+    deepest = [-1]
     seen: dict[tuple, float] = {}
     budget = [node_budget]
 
     def descend(node: Sim, done: int, gained: int, spent: int,
                 trail: list[tuple[int, int]]) -> None:
         value = gained - rho * spent
-        if value > best.value:
-            best.value, best.actions = value, list(trail)
-        if done >= deliveries or budget[0] <= 0:
+        if done >= deliveries:
+            if value > best.value:
+                best.value, best.actions = value, list(trail)
+            return
+        if (done, value) > (deepest[0], partial.value):
+            deepest[0], partial.value, partial.actions = done, value, list(trail)
+        if budget[0] <= 0:
             return
         if value + _optimistic(node, deliveries - done, rho) <= best.value:
             return
@@ -130,8 +149,8 @@ def plan(sim: Sim, rho: float = RHO, deliveries: int = 3,
             descend(child, done + (xp > 0), gained + xp, spent + cost, trail)
             trail.pop()
 
-    descend(sim.clone(), 0, 0, 0, [])
-    return best
+    descend(sim.clone(blind), 0, 0, 0, [])
+    return best if best.actions else partial
 
 
 class Planner:
@@ -144,10 +163,11 @@ class Planner:
     """
 
     def __init__(self, rho: float = RHO, deliveries: int = 3,
-                 node_budget: int = 4_000) -> None:
+                 node_budget: int = 4_000, blind: bool = True) -> None:
         self.rho = rho
         self.deliveries = deliveries
         self.node_budget = node_budget
+        self.blind = blind
         self._queued: list[tuple[int, int]] = []
         self._knowledge: bytes = b''
         self.plans = 0
@@ -155,15 +175,20 @@ class Planner:
     def __call__(self, sim: Sim) -> np.ndarray:
         knowledge = sim.state.seen.tobytes()
         if not self._queued or knowledge != self._knowledge:
-            self._queued = plan(sim, self.rho, self.deliveries, self.node_budget).actions
+            self._queued = plan(sim, self.rho, self.deliveries,
+                                self.node_budget, self.blind).actions
             self._knowledge = knowledge
             self.plans += 1
 
         legal = sim.legal_actions()
-        while self._queued:
-            action = np.array(self._queued.pop(0), np.int32)
+        if self._queued:
+            action = np.array(self._queued[0], np.int32)
             if ((legal[:, 0] == action[0]) & (legal[:, 1] == action[1])).any():
+                self._queued.pop(0)
                 return action
+            # the rest of the plan assumed this step happened, so it is now
+            # meaningless: drop the whole thing rather than skip a step of it
+            self._queued.clear()
         return _fallback(sim, legal)
 
 
@@ -179,4 +204,14 @@ def _fallback(sim: Sim, legal: np.ndarray) -> np.ndarray:
 
 
 def planner(rho: float = RHO, deliveries: int = 3, node_budget: int = 4_000) -> Planner:
-    return Planner(rho, deliveries, node_budget)
+    """Plans over what it has actually seen. The honest Layer 2 policy."""
+    return Planner(rho, deliveries, node_budget, blind=True)
+
+
+def oracle(rho: float = RHO, deliveries: int = 3, node_budget: int = 4_000) -> Planner:
+    """The same search, allowed to read every board. Not a policy - a ceiling.
+
+    The gap between this and `planner` is the value of the information the
+    agent does not have, which is what Layer 3 of APPROACH.md exists to buy.
+    """
+    return Planner(rho, deliveries, node_budget, blind=False)

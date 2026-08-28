@@ -24,20 +24,30 @@ HORIZON = 20_000  # ticks, about 3.3 hours
 SEEDS = 30
 
 
-def measure(instance: Instance, policy, seeds: int = SEEDS,
+def measure(instance: Instance, make_policy, seeds: int = SEEDS,
             horizon: int = HORIZON, start: int = 0) -> tuple[float, float]:
-    """-> mean xp/hr and the half-width of its 95% interval over `seeds` runs."""
+    """-> mean xp/hr and the half-width of its 95% interval over `seeds` runs.
+
+    `make_policy` is a zero-argument factory, not a policy, so that a policy
+    carrying state between steps gets a clean one for every seed.
+    """
     rates = np.empty(seeds)
     for seed in range(seeds):
         sim = Sim(instance, np.random.default_rng(seed))
         sim.reset(start)
-        state = sim.run(policy, horizon)
+        state = sim.run(make_policy(), horizon)
         rates[seed] = state.xp / state.ticks * 3600 / TICK
     return float(rates.mean()), float(1.96 * rates.std(ddof=1) / np.sqrt(seeds))
 
 
-def compare(instance: Instance) -> dict[str, tuple[float, float]]:
-    return {name: measure(instance, policy) for name, policy in policies.ALL.items()}
+def factories() -> dict[str, object]:
+    """Every policy as a factory, so stateless and stateful ones look alike."""
+    return {**{name: (lambda p=p: p) for name, p in policies.ALL.items()},
+            **policies.FACTORIES}
+
+
+def compare(instance: Instance, seeds: int = SEEDS) -> dict[str, tuple[float, float]]:
+    return {name: measure(instance, make, seeds=seeds) for name, make in factories().items()}
 
 
 def main(argv: list[str]) -> None:
@@ -53,10 +63,11 @@ def main(argv: list[str]) -> None:
 
     if len(argv) > 1:
         print('\nsensitivity: does the ranking survive a wrong t_dock?\n')
-        print(f'  {"t_dock":>7}  ' + ''.join(f'{n:>20}' for n in policies.ALL))
+        every = factories()
+        print(f'  {"t_dock":>7}  ' + ''.join(f'{n:>20}' for n in every))
         for dock in (2, 5, 10, 20, 40):
             tweaked = Instance.at_level(level, params=replace(instance.params, t_dock=dock))
-            row = [measure(tweaked, p, seeds=12)[0] for p in policies.ALL.values()]
+            row = [measure(tweaked, make, seeds=6)[0] for make in every.values()]
             order = np.argsort(np.argsort(-np.array(row)))
             print(f'  {dock:>7}  ' + ''.join(f'{v:>14,.0f} (#{o + 1})' for v, o in zip(row, order)))
 

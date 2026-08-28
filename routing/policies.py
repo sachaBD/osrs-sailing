@@ -123,9 +123,22 @@ def _wander(sim: Sim, actions: np.ndarray) -> Action:
     return _pick(sails, -cost)
 
 
+def _planner():
+    from .plan import planner  # imported late: plan.py reads this module's Sim
+    return planner()
+
+
+def _oracle():
+    from .plan import oracle
+    return oracle()
+
+
 ALL = {
     'random': random_legal,
     'greedy_xp': greedy_xp,
     'greedy_xp_per_tick': greedy_xp_per_tick,
     'scout_then_greedy': scout_then_greedy,
 }
+
+# policies that carry state between steps, so each run needs a fresh one
+FACTORIES = {'planner': _planner, 'oracle (cheats)': _oracle}

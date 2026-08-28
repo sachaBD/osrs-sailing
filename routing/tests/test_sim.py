@@ -133,10 +133,52 @@ class TestMechanics(unittest.TestCase):
 class TestPolicies(unittest.TestCase):
     def test_greedy_beats_random_by_a_mile(self):
         from routing.evaluate import measure
-        random_rate, _ = measure(INSTANCE, policies.random_legal, seeds=4, horizon=6000)
-        greedy_xp_per_tick, _ = measure(INSTANCE, policies.greedy_xp_per_tick, seeds=4, horizon=6000)
-        self.assertGreater(greedy_xp_per_tick, 10 * random_rate)
+        random_rate, _ = measure(INSTANCE, lambda: policies.random_legal, seeds=4, horizon=6000)
+        greedy, _ = measure(INSTANCE, lambda: policies.greedy_xp_per_tick,
+                            seeds=4, horizon=6000)
+        self.assertGreater(greedy, 10 * random_rate)
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestPlanner(unittest.TestCase):
+    def test_a_plan_is_legal_end_to_end(self):
+        from routing.plan import plan
+        sim = _sim(start=8)
+        found = plan(sim, deliveries=3, node_budget=3000)
+        self.assertTrue(found.actions)
+        twin = sim.clone()
+        for action in found.actions:
+            legal = twin.legal_actions()
+            self.assertTrue(((legal[:, 0] == action[0]) & (legal[:, 1] == action[1])).any())
+            twin.step(action)
+
+    def test_the_optimistic_bound_never_undershoots(self):
+        # branch and bound is only correct while the bound is admissible, so
+        # check it dominates what a real continuation actually achieves
+        from routing.plan import plan, _optimistic, RHO
+        sim = _sim(start=8)
+        bound = _optimistic(sim, 3, RHO)
+        found = plan(sim, rho=RHO, deliveries=3, node_budget=8000)
+        self.assertGreaterEqual(bound + 1e-6, found.value)
+
+    def test_planner_is_competitive_with_greedy(self):
+        # deliberately not "beats": measured at parity on the mean, so this is
+        # a regression guard against the planner quietly falling apart
+        from routing.evaluate import measure
+        from routing.plan import planner
+        greedy, _ = measure(INSTANCE, lambda: policies.greedy_xp_per_tick,
+                            seeds=4, horizon=8000, start=8)
+        planned, _ = measure(INSTANCE, lambda: planner(rho=1.6, deliveries=2,
+                                                       node_budget=2000),
+                             seeds=4, horizon=8000, start=8)
+        self.assertGreater(planned, 0.8 * greedy)
+
+    def test_a_blind_clone_hides_boards_never_visited(self):
+        sim = _sim(start=8)
+        blind, cheating = sim.clone(blind=True), sim.clone(blind=False)
+        visible = int(sim.state.seen.sum())
+        self.assertEqual(int((blind._true_offers != NONE).any(axis=1).sum()), visible)
+        self.assertGreater(int((cheating._true_offers != NONE).any(axis=1).sum()), visible)
