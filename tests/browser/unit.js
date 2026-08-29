@@ -7,7 +7,9 @@ import {
 } from '../../web/js/ports.js';
 import { state } from '../../web/js/state.js';
 import { filtered, sorted, matchesScope } from '../../web/js/filters.js';
-import { sequenceTrip, portsNearRoute, distanceToSegment } from '../../web/js/trip.js';
+import {
+  sequenceTrip, portsNearRoute, distanceToSegment, priceTrip, xpLift,
+} from '../../web/js/trip.js';
 
 const results = [];
 const check = (name, cond, detail = '') => results.push({ name, ok: !!cond, detail });
@@ -129,6 +131,62 @@ check('an empty trip has no stops', sequenceTrip([], null).stops.length === 0);
 check('a named start port is honoured',
   sequenceTrip(sample, 'Lunar Isle').stops.length > 0);
 check('distance is non-negative', trip.distance >= 0);
+
+/* ---- what one more task would do to the trip ---- */
+const tripIds = [TASKS[0].id, TASKS[5].id, TASKS[12].id, TASKS[30].id];
+const withTrip = (fn) => withState({ trip: tripIds, tripStart: '' }, fn);
+const known = (t) => t.xp !== null;
+
+check('no trip means nothing to lift',
+  withState({ trip: [], tripStart: '' }, () => xpLift(TASKS[0]) === null));
+check('unknown xp cannot be priced',
+  withTrip(() => TASKS.filter((t) => t.xp === null).every((t) => xpLift(t) === null)));
+
+check('the lift is what re-pricing the trip says it is', withTrip(() => {
+  const before = priceTrip(sample, null);
+  const t = TASKS.filter((x) => known(x) && !tripIds.includes(x.id))[7];
+  const after = priceTrip([...sample, t], null);
+  const lift = xpLift(t);
+  return near(lift.delta, after.rate - before.rate, 1e-9)
+    && near(lift.base, before.rate, 1e-9)
+    && near(lift.seconds, after.seconds - before.seconds, 1e-9);
+}));
+
+/* (X + x)/(S + s) > X/S reduces to x/s > X/S, so where a task costs time the
+   sign of the lift is settled by the two rates alone - the claim the column
+   makes. */
+check('a task that costs time lifts the trip exactly when it out-rates it',
+  withTrip(() => TASKS.every((t) => {
+    const lift = xpLift(t);
+    if (lift === null || lift.inTrip || lift.seconds <= 0) return true;
+    const detour = (lift.xp / lift.seconds) * 3600;
+    return Math.sign(Math.round(lift.delta * 1e6))
+      === Math.sign(Math.round((detour - lift.base) * 1e6));
+  })));
+
+/* The stop order is greedy, so inserting a task can lead the planner to a
+   better one and leave the longer trip quicker. Rare, but real: xp for free
+   time can only lift the rate, whatever the task's own rate looks like. */
+check('a task that saves time can only lift the trip', withTrip(() =>
+  TASKS.filter(known).every((t) => {
+    const lift = xpLift(t);
+    return lift.seconds > 0 || lift.delta > 0;
+  })));
+
+check('a task in the trip reports what dropping it would cost', withTrip(() => {
+  const t = TASK_BY_ID.get(tripIds[1]);
+  const lift = xpLift(t);
+  const without = priceTrip(sample.filter((x) => x.id !== t.id), null);
+  return lift.inTrip && near(lift.rate, priceTrip(sample, null).rate, 1e-9)
+    && near(lift.base, without.rate, 1e-9);
+}));
+
+check('the lift follows the trip it is measured against', (() => {
+  const one = withState({ trip: tripIds, tripStart: '' }, () => xpLift(TASKS[1]).delta);
+  const two = withState({ trip: tripIds.slice(0, 2), tripStart: '' },
+    () => xpLift(TASKS[1]).delta);
+  return one !== two;
+})());
 
 /* ---- ports near the route ---- */
 check('stops are never listed as passed', (() => {

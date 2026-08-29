@@ -67,6 +67,9 @@ tbody tr:hover { background: #221d16; }
 .xp { color: var(--accent); }
 /* the rate is the column you actually scan, so let it carry weight */
 .rate { color: var(--accent); font-weight: 600; }
+/* the lift reads as a verdict on a candidate task, so sign it by colour */
+.lift.up { color: var(--accent-2); font-weight: 600; }
+.lift.down { color: #b5705c; }
 .unknown { color: #6b5f4a; }
 .empty { text-align: center; color: var(--muted); padding: 30px; }
 .tag {
