@@ -254,11 +254,13 @@ label.inline { display: flex; align-items: center; gap: 6px; color: var(--muted)
 }
 #trip-passing b { color: var(--accent); font-weight: 600; }
 #trip-passing .pass {
-  /* button and span both, so reset what the button brings of its own */
+  /* a button, so reset what the button brings of its own */
   font: inherit; background: none; appearance: none;
   border: 1px solid var(--line); border-radius: 10px;
-  padding: 2px 9px; color: var(--muted);
+  padding: 2px 9px; color: var(--muted); cursor: pointer;
 }
-#trip-passing .pass.has-board { border-color: var(--accent); color: var(--text); cursor: pointer; }
-#trip-passing .pass.has-board:hover { background: #2a2016; }
+#trip-passing .pass:hover { background: #2a2016; }
+/* the tick, and the border with it, mark a notice board, not clickability */
+#trip-passing .pass.has-board { border-color: var(--accent); color: var(--text); }
+#trip-passing .pass.on { background: #4a3410; color: var(--accent); border-color: var(--accent); }
 #trip-passing .pass i { color: var(--muted); font-style: normal; opacity: .7; }

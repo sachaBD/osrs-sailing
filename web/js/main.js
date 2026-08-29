@@ -61,6 +61,7 @@ function wireFilters() {
   fillSelect('#f-board', allPorts, 'Any notice board');
   multiSelect('#f-from', allPorts, 'Any origin', state.from, update);
   multiSelect('#f-to', allPorts, 'Any destination', state.to, update);
+  multiSelect('#f-calls', allPorts, 'Any port', state.calls, update);
   multiSelect('#f-region', allRegions, 'Any region', state.region, update);
   multiSelect('#f-ocean', allOceans, 'Any ocean', state.ocean, update);
   closeMenusOnOutsideClick();
@@ -104,12 +105,14 @@ function wireTrip() {
     toggleTripTask(Number(button.dataset.id));
     update();
   });
-  // the "sailing past" chips filter to that port's notice board, which is the
-  // question the panel raises: I am going by, is there work there?
+  // the "sailing past" chips filter to tasks with that port at either end,
+  // which is the question the panel raises: I am going by, is there work to
+  // load or drop off there? Mutate the Set: the dropdown holds it by reference
   $('#trip-passing').addEventListener('click', (e) => {
-    const chip = e.target.closest('[data-board]');
+    const chip = e.target.closest('[data-port]');
     if (!chip) return;
-    state.board = state.board === chip.dataset.board ? '' : chip.dataset.board;
+    const port = chip.dataset.port;
+    if (!state.calls.delete(port)) state.calls.add(port);
     syncControls();
     update();
   });

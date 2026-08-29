@@ -38,10 +38,13 @@ export function filtered() {
     if (t.level < state.minLevel || t.level > state.maxLevel) return false;
     if (state.board && t.noticeBoard !== state.board) return false;
     if (state.direction && t.direction !== state.direction) return false;
-    // origin and destination are direct membership tests; only region and
-    // ocean honour the "Match on" scope
+    // origin, destination and either-end are direct membership tests; only
+    // region and ocean honour the "Match on" scope
     if (state.from.size && !state.from.has(t.from)) return false;
     if (state.to.size && !state.to.has(t.to)) return false;
+    // one port, either end of the leg: the question a port raises is whether
+    // there is work touching it, not which end of the run it sits on
+    if (state.calls.size && !state.calls.has(t.from) && !state.calls.has(t.to)) return false;
     if (!matchesScope(t, state.region, (p) => [regionOf(p)])) return false;
     if (!matchesScope(t, state.ocean, oceansOf)) return false;
     if (state.recoverAtOrigin && !canRecoverAt(t.from)) return false;
