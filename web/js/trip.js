@@ -6,17 +6,17 @@
 import { $, esc } from './dom.js';
 import { state } from './state.js';
 import { TASK_BY_ID, LOCATIONS, portXY, hasBoardAt } from './ports.js';
-import { distance, distanceToSegment } from './geometry.js';
+import { distanceToSegment } from './geometry.js';
+import { courseBetween } from './course.js';
+import { legDistance } from './cost.js';
 
 /** Default width of the "on the way" corridor, in game tiles; adjustable in
     the trip panel. The whole map spans about 1,700 tiles. */
 export const ROUTE_CORRIDOR = 120;
 
-const portGap = (a, b) => {
-  const p = portXY(a);
-  const q = portXY(b);
-  return p && q ? distance(p, q) : 0;
-};
+/* Charted sailing distance, so the stop order and the total both count the
+   water a ship has to cover rather than the line a gull would take. */
+const portGap = (a, b) => legDistance(a, b) ?? 0;
 
 export const tripTasks = () => state.trip.map((id) => TASK_BY_ID.get(id)).filter(Boolean);
 
@@ -72,11 +72,13 @@ export function portsNearRoute(stops, corridor) {
   const limit = corridor ?? state.corridor ?? ROUTE_CORRIDOR;
   const stopping = new Set(stops.map((s) => s.port));
 
-  const legs = [];
+  // Measured against the water the ship actually sails, not the chord between
+  // stops: a port can sit a long way off the straight line and still be passed
+  // close, or sit right on it with a headland in between.
+  const segments = [];
   for (let i = 1; i < stops.length; i++) {
-    const a = portXY(stops[i - 1].port);
-    const b = portXY(stops[i].port);
-    if (a && b) legs.push([a, b, i]);
+    const course = courseBetween(stops[i - 1].port, stops[i].port);
+    for (let j = 1; j < course.length; j++) segments.push([course[j - 1], course[j], i]);
   }
 
   const near = new Map();
@@ -86,7 +88,7 @@ export function portsNearRoute(stops, corridor) {
     if (!p) continue;
     let best = Infinity;
     let bestLeg = null;
-    for (const [a, b, i] of legs) {
+    for (const [a, b, i] of segments) {
       const d = distanceToSegment(p, a, b);
       if (d < best) { best = d; bestLeg = i; }
     }
@@ -122,8 +124,8 @@ function passingHtml(stops) {
     });
 
   panel.innerHTML = '<b>Sailing past</b> ' + items.join('') +
-    '<span class="muted">&#10003; = notice board. Distances are to the straight ' +
-    'line between stops, which ignores land.</span>';
+    '<span class="muted">&#10003; = notice board. Distances are to the charted ' +
+    'course, so they measure how close you really sail.</span>';
 }
 
 export function renderTripPanel() {
