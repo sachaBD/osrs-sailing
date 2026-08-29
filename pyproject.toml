@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "porttasks"
+version = "0.1.0"
+description = "OSRS Sailing port tasks: data pipeline, map, and route search"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+# Only the survey needs these, and only when re-measuring from the map tiles.
+# Everything downstream reads the committed data/derived/port_distances.json.
+survey = ["scipy>=1.10", "pillow>=10"]
+dev = ["pytest>=8", "playwright>=1.40", "ruff>=0.6"]
+# the simulator walkthrough notebook
+notebook = ["marimo>=0.23", "matplotlib>=3.8"]
+
+[project.scripts]
+porttasks-data = "porttasks.generate:main"
+porttasks-tiles = "porttasks.tiles.fetch:main"
+porttasks-wiki = "porttasks.wiki:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["porttasks*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["browser: drives a real browser through playwright (slow)"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+src = [".", "tests", "tools"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# marimo cells render by ending on a bare expression, and hand back their
+# variables in a return tuple that nothing in the file reads.
+"tools/*.marimo.py" = ["B018", "F841"]

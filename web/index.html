@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSRS Port Tasks</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>OSRS Port Tasks <span id="count-hint">Sailing cargo deliveries</span></h1>
+</header>
+
+<div class="filters">
+  <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="port name…"></div>
+  <div class="field"><label for="f-board">Notice board</label><select id="f-board"></select></div>
+  <div class="field"><label>Region</label><div class="ms" id="f-region"></div></div>
+  <div class="field"><label>Ocean</label><div class="ms" id="f-ocean"></div></div>
+  <div class="field"><label for="f-scope">Match on</label>
+    <select id="f-scope">
+      <option value="any">Any leg</option>
+      <option value="board">Notice board</option>
+      <option value="from">Origin</option>
+      <option value="to">Destination</option>
+      <option value="both">Both ends (stay local)</option>
+    </select></div>
+  <div class="field"><label>Cargo from</label><div class="ms" id="f-from"></div></div>
+  <div class="field"><label>Destination</label><div class="ms" id="f-to"></div></div>
+  <div class="field"><label for="f-direction">Direction</label>
+    <select id="f-direction">
+      <option value="">Any direction</option>
+      <option value="outbound">Outbound (pick up at board)</option>
+      <option value="inbound">Inbound (deliver to board)</option>
+    </select></div>
+  <div class="field"><label for="f-min">Min level</label><input id="f-min" type="number" min="1" max="99" placeholder="1"></div>
+  <div class="field"><label for="f-max">Max level</label><input id="f-max" type="number" min="1" max="99" placeholder="99"></div>
+  <div class="field"><label for="f-xpmin">Min XP</label><input id="f-xpmin" type="number" min="0" step="100" placeholder="any"></div>
+  <div class="field"><label for="f-xpmax">Max XP</label><input id="f-xpmax" type="number" min="0" step="100" placeholder="any"></div>
+  <div class="field check"><input id="f-unknown" type="checkbox"><label for="f-unknown">Hide unknown XP</label></div>
+  <div class="field check"><input id="f-recover" type="checkbox"><label for="f-recover" title="Only tasks whose cargo origin has a shipwright">Boat recovery at origin</label></div>
+  <div class="field check"><input id="f-board-dest" type="checkbox"><label for="f-board-dest" title="Only tasks ending at a port with a notice board">Task board at destination</label></div>
+  <button id="map-toggle">Show map</button>
+  <button id="reset">Reset</button>
+  <button id="export">Export CSV</button>
+</div>
+
+<section id="map-panel" hidden>
+  <div id="map-viewport">
+    <div id="map-layer">
+      <div id="map-tiles"></div>
+      <svg id="map-overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="map-controls">
+      <button id="map-in" title="Zoom in">+</button>
+      <button id="map-out" title="Zoom out">&minus;</button>
+      <button id="map-fit" title="Fit all ports">Fit</button>
+      <span id="map-zoom-label">100%</span>
+    </div>
+  </div>
+  <div id="map-legend">
+    <span>Click a port to filter by it (uses the <b>Match on</b> scope).</span>
+    <span>Selected: <b id="map-selection">none</b></span>
+    <button id="map-clear">Clear selection</button>
+    <label class="inline"><input type="checkbox" id="f-all-routes"> Show every filtered route</label>
+    <span class="muted">Map tiles &copy; OSRS Wiki.</span>
+  </div>
+</section>
+
+<section id="trip-panel" hidden>
+  <div class="trip-head">
+    <h2>Trip</h2>
+    <div id="trip-summary"></div>
+    <label for="trip-start">Start</label>
+    <select id="trip-start"></select>
+    <label for="trip-corridor" title="How close a port must pass to count">Passing within</label>
+    <input id="trip-corridor" type="number" min="0" max="600" step="20" value="120">
+    <button id="trip-clear">Clear trip</button>
+  </div>
+  <ol id="trip-stops"></ol>
+  <div id="trip-passing" hidden></div>
+</section>
+
+<div id="stats"></div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th class="unsortable" title="Add to trip"></th>
+      <th data-key="level" data-default="asc">Lvl</th>
+      <th data-key="xp">XP</th>
+      <th data-key="noticeBoard" data-default="asc">Notice board</th>
+      <th data-key="from" data-default="asc">Cargo from</th>
+      <th data-key="fromRegion" data-default="asc">Region</th>
+      <th data-key="recover" title="Shipwright at the cargo origin: can you recover your boat there?">Recover</th>
+      <th data-key="to" data-default="asc">Destination</th>
+      <th data-key="toRegion" data-default="asc">Region</th>
+      <th data-key="board" title="Notice board at the destination: can you pick up a new task there?">Board</th>
+      <th data-key="qty">Qty</th>
+      <th data-key="direction" data-default="asc">Dir</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

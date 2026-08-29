@@ -1,64 +1,67 @@
 PORT ?= 8000
+PY ?= python3
 
-.PHONY: help data tiles check test shots serve stop refresh refresh-apply clean clean-tiles \
-        chart chart-check chart-render clean-chart sim sim-sweep
+.PHONY: help install data tiles check test lint shot serve stop refresh refresh-apply \
+        survey survey-check survey-render sim clean clean-tiles clean-out
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | column -t -s "$$(printf '\t')"
 
-data: ## Rebuild data.js from port_tasks.list + locations.tsv
-	python3 parse_list.py
-	python3 build.py
+install: ## Install the package and its dev tools, editable
+	$(PY) -m pip install -e '.[survey,dev]'
 
-tiles: ## Download map tiles into tiles/ (~11MB, needed once for offline use)
-	python3 fetch_tiles.py
+data: ## Rebuild web/js/generated.js from tables
+	$(PY) -m porttasks.tables.tasks
+	$(PY) -m porttasks.generate
 
-check: data ## Fast unit tests: python pipeline + JS logic in a real browser
-	python3 -m unittest discover -p 'test_*.py'
-	python3 js_test.py
+tiles: ## Download map tiles into web/tiles (~11MB, needed once for offline use)
+	$(PY) -m porttasks.tiles.fetch
 
-test: check ## Unit tests plus the full end-to-end browser run
-	python3 smoke_test.py
+check: ## Fast tests: everything that does not need a browser
+	$(PY) -m pytest -m 'not browser'
 
-shots: data ## Same as test, but also write screenshots into shots/
-	python3 smoke_test.py --shots
+test: ## Every test, including the browser runs
+	$(PY) -m pytest
+
+lint: ## Style and import checks
+	$(PY) -m ruff check .
+
+shot: ## Screenshot the app into out/shots/
+	$(PY) tools/screenshot.py
 
 serve: data ## Serve the app at http://localhost:$(PORT)
 	@echo "Serving on http://localhost:$(PORT)/"
-	python3 -m http.server $(PORT) --bind 127.0.0.1
+	$(PY) -m http.server $(PORT) --bind 127.0.0.1 --directory web
 
 stop: ## Kill any server on $(PORT)
 	-@pkill -f "http.server $(PORT)" && echo "stopped"
 
-refresh: ## Re-check locations.tsv against the wiki (fills blanks, keeps your edits)
-	python3 refresh_wiki.py
+refresh: ## Re-check tables/locations.tsv against the wiki (fills blanks, keeps your edits)
+	$(PY) -m porttasks.wiki
 
 refresh-apply: ## Same, but let the wiki overwrite your edited values
-	python3 refresh_wiki.py --apply
+	$(PY) -m porttasks.wiki --apply
 
-chart: ## Build the sea graph and the port distance matrix (needs `make tiles`)
-	python3 -m routing.build_graph
-	python3 -m routing.portmatrix
+survey: ## Re-measure sailing distances off the map (one-off; needs `make tiles`)
+	$(PY) -m porttasks.routing.world.survey.build
+	$(PY) -m porttasks.routing.world.survey.measure
 
-chart-check: ## Report port pairs the lattice still routes the long way round
-	python3 -m routing.check_graph
+survey-check: ## Report port pairs the lattice still routes the long way round
+	$(PY) -m porttasks.routing.world.survey.check
 
-chart-render: ## Draw the graph, the sea lanes, and a sample of routes
-	python3 -m routing.render_graph --tiles
-	python3 -m routing.render_graph --lanes
-	python3 -m routing.render_sample
+survey-render: ## Draw the graph, the sea lanes, and a sample of routes
+	$(PY) -m porttasks.routing.world.survey.render --tiles
+	$(PY) -m porttasks.routing.world.survey.render --lanes
+	$(PY) -m porttasks.routing.world.survey.sample
 
-sim: ## Run the baseline policies against the simulator
-	python3 -m routing.evaluate
+sim: ## Walk the simulator one action at a time, in marimo
+	$(PY) -m marimo edit tools/sim_walkthrough.marimo.py
 
-sim-sweep: ## Same, plus a sensitivity sweep over the guessed docking cost
-	python3 -m routing.evaluate 30 sweep
+clean: ## Remove generated files (keeps downloaded tiles and out/)
+	rm -f web/js/generated.js derived/port_tasks.json derived/port_tasks.csv
 
-clean-chart: ## Remove the generated caches and renders under routing/
-	rm -rf routing/cache routing/renders
-
-clean: ## Remove generated files (keeps downloaded tiles)
-	rm -f src/generated.js port_tasks.json port_tasks.csv
+clean-out: ## Remove the generated output: survey caches, renders, screenshots
+	rm -rf out
 
 clean-tiles: ## Remove downloaded tiles, e.g. after changing tile_version
-	rm -rf tiles
+	rm -rf web/tiles

@@ -1,0 +1,47 @@
+# Hand-placed sailing waypoints.  EDIT ME.
+#
+# The lattice in seagraph.py is generated: it drops a waypoint every 32 tiles
+# of open water with 6 tiles of clearance.  That covers the ocean but cannot
+# thread a channel narrower than it, so the straits stay unconnected.
+#
+# This file is where those are fixed by hand.  A row is a point of open water
+# a ship can sit in, in game coordinates.  Hand waypoints are exempt from the
+# clearance rule - you looked at the map, the generator did not - but they are
+# NOT exempt from the water check: a waypoint on land, or a leg that would
+# cross land, is still refused.  Place a few in a row to thread a channel;
+# they chain to each other and pick up the open lattice at both ends.
+#
+# `python3 -m routing.chart.check` reports which port pairs are still routing
+# the long way round, and roughly where the missing link is.
+#
+# x, y are world coordinates - the same ones in locations.tsv.
+
+x	y	note
+2885	3327	Entrana - Musa Point
+2889	3231	Entrana - Musa Point
+2913	3210	Entrana - Musa Point
+2937	3186	Entrana - Musa Point
+2960	3162	Entrana - Musa Point
+2965	3131	Musa Point - Port Sarim
+2981	3107	Musa Point - Port Sarim
+3005	3110	Musa Point - Port Sarim
+3011	3134	Musa Point - Port Sarim
+3032	3158	Musa Point - Port Sarim
+3049	3182	Musa Point - Port Sarim
+2688	3261	Ardougne - Brimhaven
+2712	3261	Ardougne - Brimhaven
+2736	3261	Ardougne - Brimhaven
+2751	3238	Ardougne - Brimhaven
+2146	3102	Port Tyras - Corsair Cove
+2143	3078	Port Tyras - Corsair Cove
+2175	3053	Port Tyras - Corsair Cove
+2199	3040	Port Tyras - Corsair Cove
+2223	3026	Port Tyras - Corsair Cove
+2271	3015	Port Tyras - Corsair Cove
+2319	2967	Port Tyras - Corsair Cove
+2333	2943	Port Tyras - Corsair Cove
+2429	2847	Port Tyras - Corsair Cove
+2453	2830	Port Tyras - Corsair Cove
+2477	2832	Port Tyras - Corsair Cove
+2525	2831	Port Tyras - Corsair Cove
+2573	2830	Port Tyras - Corsair Cove

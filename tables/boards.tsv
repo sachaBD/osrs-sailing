@@ -1,0 +1,86 @@
+# Notice boards as actually seen in game.  EDIT ME.
+#
+# One row per board entry, so a single sighting is several rows sharing a
+# `seen` and a `port`.  Nothing here is generated - it is field notes, and it
+# is the only file in the project that records what the game really does
+# rather than what we assume it does.
+#
+#   seen     when you looked, to the minute.  Local time is fine, but be
+#            consistent: the 00:00 UTC daily reset is one of the things these
+#            notes are meant to pin down.
+#   port     the port whose board you are reading.
+#   kind     courier | bounty
+#   entry    courier: `origin > destination`, the two ports as the board shows
+#            them.  bounty: the creature.  Shorthand is fine - the ports are
+#            resolvable against the task pool later, and the board itself is
+#            always one of the two ends.
+#   cargo    courier only, and optional - but it is what makes an entry
+#            unambiguous.  `The Summer Shore > The Pandemonium` matches two
+#            different tasks (Coral x2 and Sea shells x3); the cargo picks one.
+#   shade    how the entry was coloured, as an ordinal, because there turn out
+#            to be at least two distinct highlights:
+#              plain  the same as everything else on the board
+#              hi1    the usual highlight (albatross, at Summer Shore and
+#                     Port Roberts)
+#              hi2    darker still than hi1 (frigatebird, at Civitas)
+#            Every board so far carries exactly one non-plain entry, and it is
+#            always a bounty - which is what the wiki's "one bounty task that
+#            will always be available" would look like.  What separates hi1
+#            from hi2 is open: it is not simply bird versus fish, since osprey
+#            sat plain on the same board where frigatebird was hi2.
+#   note     anything else.  Worth recording: how many deliveries you had done
+#            since the last reroll, and whether the board had changed since you
+#            last saw it.
+#
+# What these notes are for, in rough order of how much they matter:
+#
+#   1. How many entries a board shows, and the courier/bounty split.  We assume
+#      4 courier tasks; the first sighting below shows 5 courier and 3 bounty,
+#      so the assumption is already suspect.
+#   2. Whether the highlighted entry is the guaranteed bounty.
+#   3. Whether courier entries ever fall outside the pool we think a board has
+#      - if one does, port_tasks.list is incomplete.
+#   4. What the second highlight shade means.
+#   5. Whether the reroll really is 8 completions, which the wiki flags as
+#      unconfirmed.
+
+seen	port	kind	entry	cargo	shade	note
+2026-08-28 21:00	The Summer Shore	bounty	albatross		hi1	different colour
+2026-08-28 21:00	The Summer Shore	bounty	stingray		plain
+2026-08-28 21:00	The Summer Shore	bounty	butterfly ray		plain
+2026-08-28 21:00	The Summer Shore	courier	The Summer Shore > Port Khazard		plain
+2026-08-28 21:00	The Summer Shore	courier	The Summer Shore > The Pandemonium		plain	cargo not noted; 2 candidates
+2026-08-28 21:00	The Summer Shore	courier	The Summer Shore > Port Roberts		plain
+2026-08-28 21:00	The Summer Shore	courier	The Summer Shore > Ruins of Unkah		plain	cargo not noted; 2 candidates
+2026-08-28 21:00	The Summer Shore	courier	Ruins of Unkah > The Summer Shore		plain
+2026-08-28 21:20	Port Roberts	bounty	hammerhead		plain
+2026-08-28 21:20	Port Roberts	bounty	great white shark		plain
+2026-08-28 21:20	Port Roberts	bounty	albatross		hi1
+2026-08-28 21:20	Port Roberts	courier	Port Roberts > Port Piscarilius		plain	cargo not noted; 2 candidates
+2026-08-28 21:20	Port Roberts	courier	Port Piscarilius > Port Roberts		plain
+2026-08-28 21:20	Port Roberts	courier	Deepfin Point > Port Roberts		plain
+2026-08-28 21:20	Port Roberts	courier	Civitas illa Fortis > Port Roberts		plain
+2026-08-28 21:20	Port Roberts	courier	Port Roberts > Land's End		plain	cargo not noted; 2 candidates
+2026-08-28 21:40	Civitas illa Fortis	bounty	frigatebird		hi2	darker than the hi1 seen elsewhere
+2026-08-28 21:40	Civitas illa Fortis	bounty	osprey		plain
+2026-08-28 21:40	Civitas illa Fortis	bounty	eagle ray		plain
+2026-08-28 21:40	Civitas illa Fortis	courier	Port Piscarilius > Civitas illa Fortis		plain
+2026-08-28 21:40	Civitas illa Fortis	courier	Civitas illa Fortis > Aldarin		plain	one of two; the pair is #218 Furs and #237 Platebodies
+2026-08-28 21:40	Civitas illa Fortis	courier	Civitas illa Fortis > Aldarin		plain	the other of that pair
+2026-08-28 21:40	Civitas illa Fortis	courier	Civitas illa Fortis > Port Roberts		plain	cargo not noted; 2 candidates
+2026-08-28 21:40	Civitas illa Fortis	courier	Civitas illa Fortis > Port Piscarilius		plain	cargo not noted; 2 candidates
+2026-08-28 22:00	Aldarin	bounty	kraken		hi?	"dark"; tier vs frigatebird's hi2 not established
+2026-08-28 22:00	Aldarin	bounty	stingray		hi?	"dark"; was plain at The Summer Shore
+2026-08-28 22:00	Aldarin	bounty	osprey		plain
+2026-08-28 22:00	Aldarin	courier	Aldarin > Void Knights' Outpost		plain
+2026-08-28 22:00	Aldarin	courier	Aldarin > Deepfin Point		plain	cargo not noted; 2 candidates
+2026-08-28 22:00	Aldarin	courier	Aldarin > Brimhaven		plain
+2026-08-28 22:00	Aldarin	courier	Deepfin Point > Aldarin		plain
+2026-08-28 22:00	Aldarin	courier	Aldarin > Sunset Coast		plain	cargo not noted; 2 candidates
+2026-08-28 22:20	The Pandemonium	bounty	frigatebird	 darkest
+2026-08-28 22:20	The Pandemonium	bounty	tern		plain
+2026-08-28 22:20	The Pandemonium	bounty	bull shark		plain
+2026-08-28 22:20	The Pandemonium	courier	Port Sarim > The Pandemonium		plain
+2026-08-28 22:20	The Pandemonium	courier	The Pandemonium > Ruins of Unkah		plain
+2026-08-28 22:20	The Pandemonium	courier	Port Khazard > The Pandemonium		plain
+2026-08-28 22:20	The Pandemonium	courier	The Pandemonium > Catherby		plain	only 4 courier entries transcribed for this board
