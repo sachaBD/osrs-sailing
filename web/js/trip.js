@@ -6,13 +6,28 @@
 import { $, esc } from './dom.js';
 import { state } from './state.js';
 import { TASK_BY_ID, LOCATIONS, portXY, hasBoardAt } from './ports.js';
-import { distanceToSegment } from './geometry.js';
 import { courseBetween } from './course.js';
-import { legDistance } from './cost.js';
+import { legDistance, routeSeconds, formatDuration, COST_NOTE } from './cost.js';
 
 /** Default width of the "on the way" corridor, in game tiles; adjustable in
     the trip panel. The whole map spans about 1,700 tiles. */
 export const ROUTE_CORRIDOR = 120;
+
+/** Shortest distance from point p to the segment a-b.
+
+    The only geometry left in the app. It measures how close the course passes
+    a port, which is a perpendicular offset from a line the ship really sails -
+    not a stand-in for sailing distance, which the charted matrix now answers
+    everywhere. */
+export function distanceToSegment(p, a, b) {
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const lengthSq = dx * dx + dy * dy;
+  if (lengthSq === 0) return Math.hypot(p[0] - a[0], p[1] - a[1]);
+  // how far along the segment the nearest point lies, clamped to its ends
+  const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / lengthSq));
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
 
 /* Charted sailing distance, so the stop order and the total both count the
    water a ship has to cover rather than the line a gull would take. */
@@ -118,14 +133,17 @@ function passingHtml(stops) {
     .map(([name, v]) => {
       const board = hasBoardAt(name);
       const why = `${v.dist} tiles off leg ${v.leg}` +
-        (board ? ', has a notice board' : ', no notice board');
-      return `<span class="pass ${board ? 'has-board' : ''}" title="${esc(why)}">` +
-        `${esc(name)} <i>${v.dist}</i>${board ? ' &#10003;' : ''}</span>`;
+        (board ? ', has a notice board - click to see its tasks' : ', no notice board');
+      const tag = board ? 'button' : 'span';
+      return `<${tag} class="pass ${board ? 'has-board' : ''}"` +
+        (board ? ` data-board="${esc(name)}"` : '') + ` title="${esc(why)}">` +
+        `${esc(name)} <i>${v.dist}</i>${board ? ' &#10003;' : ''}</${tag}>`;
     });
 
   panel.innerHTML = '<b>Sailing past</b> ' + items.join('') +
-    '<span class="muted">&#10003; = notice board. Distances are to the charted ' +
-    'course, so they measure how close you really sail.</span>';
+    '<span class="muted">&#10003; = notice board, click it to see its tasks. ' +
+    'Distances are to the charted course, so they measure how close you ' +
+    'really sail.</span>';
 }
 
 export function renderTripPanel() {
@@ -136,12 +154,18 @@ export function renderTripPanel() {
   const xp = tasks.reduce((sum, t) => sum + (t.xp || 0), 0);
   const unknown = tasks.filter((t) => t.xp === null).length;
 
+  // every task is loaded once and unloaded once, wherever the stops fall
+  const seconds = routeSeconds(travelled, stops.length, tasks.length * 2);
+  const rate = seconds ? (xp / seconds) * 3600 : 0;
+
   $('#trip-summary').innerHTML =
     `<span><b>${tasks.length}</b> task${tasks.length === 1 ? '' : 's'}</span>` +
     `<span><b>${stops.length}</b> stops</span>` +
     `<span>XP <b>${xp.toLocaleString()}</b>` +
     (unknown ? ` <span class="unknown">+${unknown} unknown</span>` : '') + '</span>' +
-    `<span>~<b>${Math.round(travelled).toLocaleString()}</b> tiles sailed</span>`;
+    `<span>~<b>${Math.round(travelled).toLocaleString()}</b> tiles sailed</span>` +
+    `<span title="${esc(COST_NOTE)}">~<b>${formatDuration(seconds)}</b></span>` +
+    `<span title="${esc(COST_NOTE)}">XP/hr <b>${Math.round(rate).toLocaleString()}</b></span>`;
 
   const ports = [...new Set(tasks.flatMap((t) => [t.from, t.to]))].sort();
   $('#trip-start').innerHTML = '<option value="">Start anywhere</option>' +

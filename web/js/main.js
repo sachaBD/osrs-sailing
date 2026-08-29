@@ -104,6 +104,15 @@ function wireTrip() {
     toggleTripTask(Number(button.dataset.id));
     update();
   });
+  // the "sailing past" chips filter to that port's notice board, which is the
+  // question the panel raises: I am going by, is there work there?
+  $('#trip-passing').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-board]');
+    if (!chip) return;
+    state.board = state.board === chip.dataset.board ? '' : chip.dataset.board;
+    syncControls();
+    update();
+  });
   $('#trip-clear').addEventListener('click', () => {
     state.trip = [];
     state.tripStart = '';
@@ -116,7 +125,13 @@ function wireTrip() {
 }
 
 function wireMap() {
-  viewer = initViewer();
+  viewer = initViewer({
+    onPortClick(name) {
+      state.board = state.board === name ? '' : name;
+      syncControls();
+      update();
+    },
+  });
 
   const zoomFromCentre = (factor) => () => {
     const box = $('#map-viewport').getBoundingClientRect();

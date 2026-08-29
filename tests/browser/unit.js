@@ -1,14 +1,13 @@
 /* Unit tests for the pure logic, run inside a real browser by test_unit_js.py.
    Anything needing the DOM or the map belongs in test_smoke.py instead. */
 import { esc } from '../../web/js/dom.js';
-import { distance, distanceToSegment } from '../../web/js/geometry.js';
 import {
   TASKS, TASK_BY_ID, allPorts, allRegions, allOceans,
   regionOf, oceansOf, canRecoverAt, hasBoardAt, portXY, legsOf,
 } from '../../web/js/ports.js';
 import { state } from '../../web/js/state.js';
 import { filtered, sorted, matchesScope } from '../../web/js/filters.js';
-import { sequenceTrip, portsNearRoute } from '../../web/js/trip.js';
+import { sequenceTrip, portsNearRoute, distanceToSegment } from '../../web/js/trip.js';
 
 const results = [];
 const check = (name, cond, detail = '') => results.push({ name, ok: !!cond, detail });
@@ -18,7 +17,6 @@ const near = (a, b, tol = 0.001) => Math.abs(a - b) < tol;
 check('esc neutralises quotes', esc(`Land's "End" & <b>`) === 'Land&#39;s &quot;End&quot; &amp; &lt;b&gt;');
 
 /* ---- geometry ---- */
-check('distance is euclidean', near(distance([0, 0], [3, 4]), 5));
 check('point on segment has zero distance', near(distanceToSegment([5, 0], [0, 0], [10, 0]), 0));
 check('perpendicular distance', near(distanceToSegment([5, 3], [0, 0], [10, 0]), 3));
 check('past the end clamps to the endpoint',

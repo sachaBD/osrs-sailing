@@ -1,7 +1,7 @@
 /* Markers and routes drawn over the map tiles. */
 import { esc } from '../dom.js';
 import { state } from '../state.js';
-import { LOCATIONS, MAP_META, regionOf, dockLevelOf } from '../ports.js';
+import { LOCATIONS, MAP_META, regionOf, dockLevelOf, hasBoardAt } from '../ports.js';
 import { currentTrip, portsNearRoute } from '../trip.js';
 import { courseBetween, courseThrough } from '../course.js';
 import { layerXY, toLayer } from './viewer.js';
@@ -50,6 +50,9 @@ function markerHtml(name, { stopNums, near, touched, hasTrip }) {
   if (!point) return '';
 
   const classes = ['marker'];
+  // only a port with a notice board has tasks to filter to, so only those click
+  if (hasBoardAt(name)) classes.push('boardable');
+  if (state.board === name) classes.push('board-filtered');
   if (stopNums.length) classes.push('on-trip');
   else if (near) classes.push('near-route');
   else if (hasTrip || !touched) classes.push('dim');
@@ -63,7 +66,10 @@ function markerHtml(name, { stopNums, near, touched, hasTrip }) {
 
   const level = dockLevelOf(name);
   const tip = `${name} - ${regionOf(name)}${level ? `, dock level ${level}` : ''}` +
-    (near ? `\nsailing past: ${near.dist} tiles off leg ${near.leg}` : '');
+    (near ? `\nsailing past: ${near.dist} tiles off leg ${near.leg}` : '') +
+    (hasBoardAt(name)
+      ? `\nclick to ${state.board === name ? 'clear the' : 'see its'} notice board`
+      : '\nno notice board');
 
   return `<g class="${classes.join(' ')}" data-port="${esc(name)}"` +
     ` transform="translate(${point[0]},${point[1]})">` +

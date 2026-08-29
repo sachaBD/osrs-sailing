@@ -97,13 +97,27 @@ def test_drag_pans_by_the_mouse_delta(map_open):
     assert map_open.evaluate('() => String(getSelection())') == '', 'drag selected text'
 
 
-def test_clicking_a_port_filters_the_table(map_open):
+def test_clicking_a_port_filters_to_its_notice_board(map_open):
+    """A port with a board filters to it; clicking it again clears it."""
     # click the dot, not the <g>: its bbox includes the label above, so the
     # bbox centre can land in empty space between label and marker
-    map_open.locator('#map-overlay .marker .dot').first.click()
+    dot = map_open.locator('#map-overlay .marker.boardable .dot').first
+    dot.click()
     map_open.wait_for_timeout(150)
     assert 0 < rows(map_open) < TASK_COUNT
-    assert 'port=' in map_open.url
+    assert 'board=' in map_open.url
+    assert map_open.locator('#f-board').input_value() != ''
+
+    dot.click()
+    map_open.wait_for_timeout(150)
+    assert rows(map_open) == TASK_COUNT
+    assert 'board=' not in map_open.url
+
+
+def test_a_port_without_a_board_is_not_clickable(map_open):
+    boardable = map_open.locator('#map-overlay .marker.boardable').count()
+    total = map_open.locator('#map-overlay .marker').count()
+    assert 0 < boardable < total, f'{boardable} of {total}'
 
 
 # --- the route builder -------------------------------------------------------
@@ -125,7 +139,15 @@ def test_trip_sequences_into_stops_and_legs(trip):
     assert trip.is_visible('#trip-panel')
     stops = trip.locator('#trip-stops li').count()
     assert stops >= 4
-    assert trip.locator('.trip-leg').count() == stops - 1
+    # one polyline for the whole trip, not a chord per leg, so the casing
+    # cannot show through at the joins
+    leg = trip.locator('.trip-leg')
+    assert leg.count() == 1
+    # and it rounds headlands: a charted course needs far more points than it
+    # has stops, where straight chords would have exactly one point per stop
+    points = trip.evaluate(
+        '() => document.querySelector(".trip-leg").getAttribute("points").split(" ").length')
+    assert points > stops, points
     assert 'trip=' in trip.url
 
 

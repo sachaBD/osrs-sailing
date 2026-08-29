@@ -132,8 +132,10 @@ tbody tr:hover { background: #221d16; }
 }
 .route:hover { opacity: .9; }
 
-/* markers are labels now, not controls: nothing happens on click */
+/* only ports with a notice board do anything on click */
 .marker { cursor: default; }
+.marker.boardable { cursor: pointer; }
+.marker.board-filtered .dot { fill: var(--accent-2); }
 .marker .hit {
   fill: transparent;
   /* scales with the dot so the click target stays ~constant on screen;
@@ -252,8 +254,11 @@ label.inline { display: flex; align-items: center; gap: 6px; color: var(--muted)
 }
 #trip-passing b { color: var(--accent); font-weight: 600; }
 #trip-passing .pass {
+  /* button and span both, so reset what the button brings of its own */
+  font: inherit; background: none; appearance: none;
   border: 1px solid var(--line); border-radius: 10px;
   padding: 2px 9px; color: var(--muted);
 }
-#trip-passing .pass.has-board { border-color: var(--accent); color: var(--text); }
+#trip-passing .pass.has-board { border-color: var(--accent); color: var(--text); cursor: pointer; }
+#trip-passing .pass.has-board:hover { background: #2a2016; }
 #trip-passing .pass i { color: var(--muted); font-style: normal; opacity: .7; }
