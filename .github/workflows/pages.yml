@@ -1,0 +1,58 @@
+# Build the app and publish web/ to GitHub Pages.
+#
+# The site is static, but two of its pieces are generated rather than committed:
+# web/js/generated.js (folded out of tables/ by `make data`) and web/tiles/
+# (~11MB downloaded from the wiki by `make tiles`). Both are rebuilt here.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow one deploy at a time; let a newer push finish rather than cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: python -m pip install -e .
+
+      # Tiles are immutable per tile_version, so a hit here skips the download
+      # and spares the wiki's tile server on every deploy but the first.
+      - uses: actions/cache@v4
+        with:
+          path: web/tiles
+          key: tiles-${{ hashFiles('tables/map_config.json') }}
+
+      - run: make data
+      - run: make tiles
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

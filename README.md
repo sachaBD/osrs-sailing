@@ -5,6 +5,9 @@ route builder — and, under `routing/`, the same tasks treated as an
 optimisation problem. The web app has no runtime dependencies: it is plain ES
 modules, served statically.
 
+Hosted at <http://sachabd.me/osrs-sailing/>, rebuilt from `main` by
+`.github/workflows/pages.yml`.
+
     make install    # editable install of the porttasks package + dev tools
     make serve      # http://localhost:8000
     make check      # every test that does not need a browser
