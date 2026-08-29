@@ -2,9 +2,14 @@
 import { $, esc } from './dom.js';
 import { state } from './state.js';
 import { DERIVED, sorted } from './filters.js';
-import { regionOf, canRecoverAt, hasBoardAt } from './ports.js';
+import { canRecoverAt, hasBoardAt } from './ports.js';
+import { legDistance, taskSeconds, taskXpPerHour, formatDuration, COST_NOTE } from './cost.js';
 
-const COLUMN_COUNT = 12;
+const COLUMN_COUNT = 13;
+
+/** Cells that can be empty: unknown XP, or a pair the chart never measured. */
+const num = (value, render) => (value === null || value === undefined
+  ? '<span class="unknown">?</span>' : render(value));
 
 const tick = (on, yes, no) => on
   ? `<span class="yes" title="${esc(yes)}">&#10004;</span>`
@@ -17,18 +22,19 @@ function rowHtml(t) {
       <td class="mid"><button class="trip-btn" data-id="${t.id}"
         title="${inTrip ? 'Remove from trip' : 'Add to trip'}">${inTrip ? '&minus;' : '+'}</button></td>
       <td class="num">${t.level}</td>
-      <td class="num xp">${t.xp === null ? '<span class="unknown">?</span>' : t.xp.toLocaleString()}</td>
+      <td><span class="tag ${t.direction}">${t.direction}</span></td>
       <td>${esc(t.noticeBoard)}</td>
       <td>${esc(t.from)}</td>
-      <td class="muted">${esc(regionOf(t.from))}</td>
+      <td>${esc(t.to)}</td>
       <td class="mid">${tick(canRecoverAt(t.from),
         `Shipwright at ${t.from}`, `No shipwright at ${t.from}`)}</td>
-      <td>${esc(t.to)}</td>
-      <td class="muted">${esc(regionOf(t.to))}</td>
       <td class="mid">${tick(hasBoardAt(t.to),
         `Notice board at ${t.to}`, `No notice board at ${t.to}`)}</td>
       <td class="num">${t.qty}</td>
-      <td><span class="tag ${t.direction}">${t.direction}</span></td>
+      <td class="num">${num(legDistance(t.from, t.to), (d) => Math.round(d).toLocaleString())}</td>
+      <td class="num">${num(taskSeconds(t), (s) => formatDuration(s))}</td>
+      <td class="num xp">${num(t.xp, (xp) => xp.toLocaleString())}</td>
+      <td class="num rate">${num(taskXpPerHour(t), (r) => Math.round(r).toLocaleString())}</td>
     </tr>`;
 }
 
@@ -39,12 +45,16 @@ export function renderTable(rows) {
   const known = rows.filter((r) => r.xp !== null);
   const totalXp = known.reduce((sum, r) => sum + r.xp, 0);
   const best = known.length ? Math.max(...known.map((r) => r.xp)) : null;
+  const rates = rows.map(taskXpPerHour).filter((r) => r !== null);
+  const bestRate = rates.length ? Math.max(...rates) : null;
 
   $('#stats').innerHTML = `
     <span><b>${rows.length}</b> task${rows.length === 1 ? '' : 's'}</span>
     <span>total XP <b>${totalXp.toLocaleString()}</b></span>
     <span>avg XP <b>${known.length ? Math.round(totalXp / known.length).toLocaleString() : '&mdash;'}</b></span>
-    <span>best <b>${best === null ? '&mdash;' : best.toLocaleString()}</b></span>`;
+    <span>best <b>${best === null ? '&mdash;' : best.toLocaleString()}</b></span>
+    <span title="${esc(COST_NOTE)}">best XP/hr <b>${
+      bestRate === null ? '&mdash;' : Math.round(bestRate).toLocaleString()}</b></span>`;
 
   document.querySelectorAll('th[data-key]').forEach((th) => {
     th.classList.toggle('sorted', th.dataset.key === state.sortKey);
@@ -52,13 +62,19 @@ export function renderTable(rows) {
   });
 }
 
-const CSV_COLUMNS = ['level', 'xp', 'noticeBoard', 'from', 'fromRegion', 'recover',
-                     'to', 'toRegion', 'board', 'qty', 'direction'];
+// wider than the table: region is useful in a spreadsheet even though the
+// page no longer shows it, and the CSV can afford the width
+const CSV_COLUMNS = ['level', 'direction', 'noticeBoard', 'from', 'to', 'recover', 'tasks',
+                     'fromRegion', 'toRegion', 'cargo', 'qty', 'distance', 'seconds',
+                     'xp', 'xpPerHour'];
 
 const CSV_DERIVED = {
   ...DERIVED,
   recover: (t) => (canRecoverAt(t.from) ? 'yes' : 'no'),
-  board: (t) => (hasBoardAt(t.to) ? 'yes' : 'no'),
+  tasks: (t) => (hasBoardAt(t.to) ? 'yes' : 'no'),
+  distance: (t) => { const d = legDistance(t.from, t.to); return d === null ? null : d.toFixed(1); },
+  seconds: (t) => { const s = taskSeconds(t); return s === null ? null : s.toFixed(1); },
+  xpPerHour: (t) => { const r = taskXpPerHour(t); return r === null ? null : Math.round(r); },
 };
 
 export function exportCsv(rows) {

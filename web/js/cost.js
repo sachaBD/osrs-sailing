@@ -1,0 +1,49 @@
+/* Pricing a task: how far its cargo travels, how long that takes, what it pays.
+
+   One task in isolation, never a route. The clock starts when you take the
+   cargo aboard at the origin and stops when you hand it over at the
+   destination, so it counts one sailing leg and two port calls. It does not
+   count getting to the origin in the first place - for an inbound task, whose
+   notice board is at the destination, that omitted sail back out is the whole
+   leg again. Read inbound rates as a ceiling.
+
+   Every constant comes from tables/params.tsv, and half of them are still
+   guesses; see COST_NOTE. */
+import { LEGS, COSTS } from './generated.js';
+
+/** Charted sailing distance in game tiles, or null for an uncharted pair. */
+export function legDistance(from, to) {
+  const row = LEGS[from];
+  const d = row ? row[to] : undefined;
+  return d === undefined ? null : d;
+}
+
+/** Ticks to sail a leg and work the cargo at both ends of it. */
+export function taskTicks(task) {
+  const d = legDistance(task.from, task.to);
+  if (d === null) return null;
+  return Math.ceil(d / COSTS.sailSpeed) + COSTS.stops * (COSTS.tDock + COSTS.tCargo);
+}
+
+export function taskSeconds(task) {
+  const ticks = taskTicks(task);
+  return ticks === null ? null : ticks * COSTS.tick;
+}
+
+/** Experience per hour of that leg, or null when either half is unknown. */
+export function taskXpPerHour(task) {
+  const seconds = taskSeconds(task);
+  if (seconds === null || !seconds || task.xp === null) return null;
+  return (task.xp / seconds) * 3600;
+}
+
+/** m:ss, the way the game's own timers read. */
+export function formatDuration(seconds) {
+  if (seconds === null) return null;
+  const whole = Math.round(seconds);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}
+
+export const COST_NOTE =
+  `Sailing at ${COSTS.sailSpeed} tiles/tick, plus ${COSTS.tDock + COSTS.tCargo} ticks ` +
+  `of docking and cargo handling at each end. Docking time is still a guess.`;

@@ -3,6 +3,8 @@ import json
 
 from .paths import GENERATED_JS as OUT
 from .paths import TILE_URL_DIR
+from .routing.problem.params import TICK, Params
+from .routing.world.distances import Distances
 from .tables import locations, tasks
 from .tiles import grid
 
@@ -22,13 +24,36 @@ def map_info():
     }
 
 
+def costs():
+    """The scalars the page needs to turn a distance into a time, from params.tsv.
+
+    Only the sailing and cargo-handling costs: the page prices a single leg,
+    not a route, so nothing about boards, capacity or rerolls is relevant.
+    `stops` is the two port calls a delivery makes - load at the origin,
+    unload at the destination - and both are charged dock plus cargo.
+    """
+    p = Params.load()
+    return {
+        'tick': TICK,
+        'sailSpeed': p.sail_speed,
+        'tDock': p.t_dock,
+        'tCargo': p.t_cargo,
+        'stops': 2,
+    }
+
+
 def main():
     task_rows = json.load(open(tasks.JSON_OUT))
     meta = locations.load()
+    legs = Distances.load().legs
 
-    missing = sorted({t[k] for t in task_rows for k in ('noticeBoard', 'from', 'to')} - set(meta))
+    touched = {t[k] for t in task_rows for k in ('noticeBoard', 'from', 'to')}
+    missing = sorted(touched - set(meta))
     if missing:
         raise SystemExit(f'{locations.PATH} has no entry for: {missing}')
+    uncharted = sorted(touched - set(legs))
+    if uncharted:
+        raise SystemExit(f'no charted sailing distances for: {uncharted}')
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT, 'w') as f:
@@ -36,12 +61,15 @@ def main():
         f.write(f'export const TASKS = {json.dumps(task_rows)};\n')
         f.write(f'export const LOCATIONS = {json.dumps(meta, sort_keys=True)};\n')
         f.write(f'export const MAP_META = {json.dumps(map_info())};\n')
+        f.write(f'export const LEGS = {json.dumps(legs, sort_keys=True)};\n')
+        f.write(f'export const COSTS = {json.dumps(costs())};\n')
 
     coords = sum(1 for v in meta.values() if v.get('coords'))
     regions = sorted({v['region'] for v in meta.values()})
     oceans = sorted({o for v in meta.values() for o in v['oceans']})
     print(f'{OUT}: {len(task_rows)} tasks, {len(meta)} locations, '
-          f'{len(regions)} regions, {len(oceans)} oceans, {coords} mapped')
+          f'{len(regions)} regions, {len(oceans)} oceans, {coords} mapped, '
+          f'{len(legs)} charted ports')
 
 
 if __name__ == '__main__':

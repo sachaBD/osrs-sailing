@@ -1,13 +1,18 @@
 /* Turning the state into the list of tasks on screen. */
 import { state } from './state.js';
 import { TASKS, legsOf, regionOf, oceansOf, canRecoverAt, hasBoardAt } from './ports.js';
+import { legDistance, taskSeconds, taskXpPerHour } from './cost.js';
 
-/** Columns computed from the port tables rather than stored on the task. */
+/** Columns computed from the port tables rather than stored on the task.
+    Region is no longer a column, but it stays here for the CSV export. */
 export const DERIVED = {
   fromRegion: (t) => regionOf(t.from),
   toRegion: (t) => regionOf(t.to),
   recover: (t) => (canRecoverAt(t.from) ? 1 : 0),
-  board: (t) => (hasBoardAt(t.to) ? 1 : 0),
+  tasks: (t) => (hasBoardAt(t.to) ? 1 : 0),
+  distance: (t) => legDistance(t.from, t.to),
+  seconds: (t) => taskSeconds(t),
+  xpPerHour: (t) => taskXpPerHour(t),
 };
 
 /** Does this task touch the selected group, under the current scope?
