@@ -25,6 +25,7 @@ export const state = {
   mapOpen: false,
   from: new Set(),
   to: new Set(),
+  calls: new Set(),     // ports a task touches at either end
   region: new Set(),
   ocean: new Set(),
   trip: [],             // ordered task ids in the route builder
@@ -42,7 +43,7 @@ const URL_STR = { q: '', board: '', direction: '', scope: 'any',
                   sortKey: 'xp', sortDir: 'desc', tripStart: '' };
 const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120 };
 const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest', 'showAllRoutes', 'mapOpen'];
-const URL_SET = ['from', 'to', 'region', 'ocean'];
+const URL_SET = ['from', 'to', 'calls', 'region', 'ocean'];
 const SEP = '~';   // port names hold spaces, commas and apostrophes; never this
 
 /* Param names are part of the app's public surface: links get shared and

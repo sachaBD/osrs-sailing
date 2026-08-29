@@ -132,18 +132,21 @@ function passingHtml(stops) {
     .sort((a, b) => a[1].dist - b[1].dist)
     .map(([name, v]) => {
       const board = hasBoardAt(name);
+      // every passing port is clickable: cargo runs to and from ports that
+      // have no board of their own, so the filter is worth offering there too
       const why = `${v.dist} tiles off leg ${v.leg}` +
-        (board ? ', has a notice board - click to see its tasks' : ', no notice board');
-      const tag = board ? 'button' : 'span';
-      return `<${tag} class="pass ${board ? 'has-board' : ''}"` +
-        (board ? ` data-board="${esc(name)}"` : '') + ` title="${esc(why)}">` +
-        `${esc(name)} <i>${v.dist}</i>${board ? ' &#10003;' : ''}</${tag}>`;
+        (board ? ', has a notice board' : ', no notice board') +
+        ` - click for tasks to or from ${name}`;
+      return `<button class="pass ${board ? 'has-board' : ''}` +
+        `${state.calls.has(name) ? ' on' : ''}" data-port="${esc(name)}"` +
+        ` title="${esc(why)}">${esc(name)} <i>${v.dist}</i>` +
+        `${board ? ' &#10003;' : ''}</button>`;
     });
 
   panel.innerHTML = '<b>Sailing past</b> ' + items.join('') +
-    '<span class="muted">&#10003; = notice board, click it to see its tasks. ' +
-    'Distances are to the charted course, so they measure how close you ' +
-    'really sail.</span>';
+    '<span class="muted">Click a port to filter to the tasks that load or ' +
+    'deliver there. &#10003; = notice board. Distances are to the charted ' +
+    'course, so they measure how close you really sail.</span>';
 }
 
 export function renderTripPanel() {

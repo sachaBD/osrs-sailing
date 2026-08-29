@@ -21,9 +21,10 @@ def test_table_renders_every_task(fresh):
 
 
 def test_every_multi_select_filters_and_resets(fresh):
-    """All four in one page: they shipped dead once, which is why this exists."""
+    """All five in one page: they shipped dead once, which is why this exists."""
     for panel, value in [('#f-region', 'Zeah'), ('#f-ocean', 'Northern Ocean'),
-                         ('#f-from', 'Rellekka'), ('#f-to', 'Prifddinas')]:
+                         ('#f-from', 'Rellekka'), ('#f-to', 'Prifddinas'),
+                         ('#f-calls', 'Port Sarim')]:
         pick_multi(fresh, panel, value)
         assert 0 < rows(fresh) < TASK_COUNT, panel
         assert value.split()[0] in fresh.url, panel
@@ -163,6 +164,49 @@ def test_pickups_precede_deliveries(trip):
       return { ok, stops: t.stops.length, tasks: t.tasks.length };
     }''')
     assert order['ok'], order
+
+
+def _passing_ports(page) -> list[str]:
+    return page.eval_on_selector_all('#trip-passing .pass', 'els => els.map(e => e.dataset.port)')
+
+
+def test_a_passing_port_filters_to_tasks_at_either_end(trip):
+    """The chips answer "is there work at this port", not "what does its board
+    offer": a port you sail past is worth a call if a task loads or delivers
+    there, whoever posted it."""
+    trip.fill('#trip-corridor', '400')     # wide enough to be sure of a chip
+    trip.wait_for_timeout(120)
+    ports = _passing_ports(trip)
+    assert ports, 'no ports listed as passed'
+
+    trip.locator('#trip-passing .pass').first.click()
+    trip.wait_for_timeout(150)
+    port = ports[0]
+    assert 'calls=' in trip.url
+    assert 'board=' not in trip.url
+    assert 0 < rows(trip) < TASK_COUNT
+    ends = trip.eval_on_selector_all(
+        '#tbody tr', 'rows => rows.map(r => [r.children[4].textContent,'
+                     ' r.children[5].textContent])')
+    assert all(port in row for row in ends), (port, ends[:3])
+
+    trip.locator('#trip-passing .pass').first.click()   # clicking again clears it
+    trip.wait_for_timeout(150)
+    assert rows(trip) == TASK_COUNT
+    assert 'calls=' not in trip.url
+
+
+def test_every_passing_port_is_clickable(trip):
+    """Clickability marks a port, not a notice board: the tick marks the board.
+
+    Cargo runs to and from ports with no board of their own, so the filter is
+    worth offering on those chips too.
+    """
+    trip.fill('#trip-corridor', '400')
+    trip.wait_for_timeout(120)
+    chips = trip.locator('#trip-passing .pass').count()
+    assert chips > 0
+    assert trip.locator('#trip-passing button.pass[data-port]').count() == chips
 
 
 def test_clearing_the_trip_closes_the_panel(trip):

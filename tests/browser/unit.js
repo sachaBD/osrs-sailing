@@ -66,6 +66,14 @@ check('scope=any accepts one end', withState(
     { region: new Set(['Zeah']), scope: 'both' }, () => filtered().length)));
 check('matchesScope passes when nothing is selected',
   matchesScope(TASKS[0], new Set(), () => []));
+check('calls takes a port at either end', withState(
+  { calls: new Set(['Port Sarim']) },
+  () => filtered().every((t) => t.from === 'Port Sarim' || t.to === 'Port Sarim')));
+check('calls is not the notice board filter', withState(
+  { calls: new Set(['Port Sarim']) },
+  () => filtered().some((t) => t.noticeBoard !== 'Port Sarim')
+    && filtered().some((t) => t.from === 'Port Sarim')
+    && filtered().some((t) => t.to === 'Port Sarim')));
 check('sorting nulls sink regardless of direction', (() => {
   const rows = TASKS.slice();
   const desc = withState({ sortKey: 'xp', sortDir: 'desc' }, () => sorted(rows));
@@ -86,9 +94,11 @@ check('url uses the published parameter names', withState(
   }));
 
 check('url round-trips through state', (() => {
-  history.replaceState(null, '', '?map=1&allRoutes=1&region=Zeah&corridor=0&trip=1~2');
+  history.replaceState(null, '',
+    '?map=1&allRoutes=1&region=Zeah&calls=Port Sarim&corridor=0&trip=1~2');
   urlToState();
   const ok = state.mapOpen && state.showAllRoutes && state.region.has('Zeah')
+    && state.calls.has('Port Sarim')
     && state.corridor === 0 && state.trip.join() === '1,2';
   history.replaceState(null, '', location.pathname);
   urlToState();
