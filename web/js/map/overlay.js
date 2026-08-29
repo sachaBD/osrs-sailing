@@ -3,10 +3,14 @@ import { esc } from '../dom.js';
 import { state } from '../state.js';
 import { LOCATIONS, MAP_META, regionOf, dockLevelOf } from '../ports.js';
 import { currentTrip, portsNearRoute } from '../trip.js';
-import { layerXY } from './viewer.js';
+import { courseBetween, courseThrough } from '../course.js';
+import { layerXY, toLayer } from './viewer.js';
 
 /** Above this many rows the every-route view is an unreadable hairball. */
 const ROUTE_LIMIT = 120;
+
+/** Game coordinates -> an SVG points list in layer space. */
+const polyline = (points) => points.map((p) => toLayer(p[0], p[1]).join(',')).join(' ');
 
 function routeLines(rows) {
   const routes = new Map();
@@ -21,28 +25,24 @@ function routeLines(rows) {
   const busiest = Math.max(1, ...[...routes.values()].map((r) => r.n));
   const parts = [];
   for (const route of routes.values()) {
-    const a = layerXY(route.from);
-    const b = layerXY(route.to);
-    if (!a || !b) continue;
+    const course = courseBetween(route.from, route.to);
+    if (!course.length) continue;
     const label = `${route.from} to ${route.to}: ${route.n} task${route.n === 1 ? '' : 's'}`;
-    parts.push(`<line class="route" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"` +
-      ` stroke-width="${1.5 + 3 * (route.n / busiest)}"><title>${esc(label)}</title></line>`);
+    parts.push(`<polyline class="route" points="${polyline(course)}"` +
+      ` stroke-width="${1.5 + 3 * (route.n / busiest)}"><title>${esc(label)}</title></polyline>`);
   }
   return parts;
 }
 
-/** Each leg twice: a dark casing for legibility, then the coloured line. */
+/** The sailed course through every stop, twice: a dark casing for legibility,
+    then the coloured line on top of it. One path, so the casing never shows
+    through at the joins between legs. */
 function tripLines(stops) {
-  const parts = [];
-  for (let i = 1; i < stops.length; i++) {
-    const a = layerXY(stops[i - 1].port);
-    const b = layerXY(stops[i].port);
-    if (!a || !b) continue;
-    const coords = ` x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"`;
-    parts.push(`<line class="trip-casing"${coords}></line>`);
-    parts.push(`<line class="trip-leg"${coords}></line>`);
-  }
-  return parts;
+  const course = courseThrough(stops.map((s) => s.port));
+  if (course.length < 2) return [];
+  const points = polyline(course);
+  return [`<polyline class="trip-casing" points="${points}"></polyline>`,
+          `<polyline class="trip-leg" points="${points}"></polyline>`];
 }
 
 function markerHtml(name, { stopNums, near, touched, hasTrip }) {
@@ -53,9 +53,8 @@ function markerHtml(name, { stopNums, near, touched, hasTrip }) {
   if (stopNums.length) classes.push('on-trip');
   else if (near) classes.push('near-route');
   else if (hasTrip || !touched) classes.push('dim');
-  if (state.port.has(name)) classes.push('picked');
   // labels only where they earn their place, or 30 names collide
-  if (stopNums.length || near || state.port.has(name)) classes.push('labelled');
+  if (stopNums.length || near) classes.push('labelled');
 
   const badge = stopNums.length
     ? `<g class="stop-badge"><circle r="${stopNums.length > 1 ? 15 : 11}"></circle>` +

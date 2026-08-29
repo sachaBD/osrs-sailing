@@ -20,9 +20,6 @@ is combinatorial over 30 nodes.
 """
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import numpy as np
 from scipy.sparse import csgraph
 
@@ -32,6 +29,7 @@ from porttasks.routing.errors import SurveyError
 
 from ..catalogue import Catalogue
 from ..distances import Distances
+from ..routes import Routes
 from . import exact, watermask
 from .seagraph import SeaGraph, _clear_line
 
@@ -156,9 +154,13 @@ def main() -> None:
         raise SurveyError(f'triangle inequality still violated by {-closed:.2f} tiles')
 
     matrix.save()
-    Path(ROUTES).parent.mkdir(parents=True, exist_ok=True)
-    with open(ROUTES, 'w') as f:
-        json.dump({str(a): {str(b): p for b, p in row.items()} for a, row in routes.items()}, f)
+    # The two directions are now the same water sailed backwards, so keep one
+    # of each, in game coordinates: the map draws in those, and storing them
+    # here means nothing downstream has to carry the mask around to convert.
+    courses = {}
+    for a, b in ((a, b) for a in ports for b in ports if a < b):
+        courses.setdefault(a, {})[b] = [list(mask.to_xy(r, c)) for r, c in routes[a][b]]
+    Routes(courses).save(ROUTES)
 
     off = table[~np.eye(len(ports), dtype=bool)]
     straight = np.array([[float(np.hypot(*np.subtract(world.ports[a].coords,
@@ -171,7 +173,8 @@ def main() -> None:
           f'symmetry and closure verified')
     print(f'  shortest {off.min():.0f} tiles, longest {off.max():.0f}, median {np.median(off):.0f}')
     print(f'  vs straight lines: median x{np.median(detour):.2f}, worst x{detour.max():.2f}')
-    print(f'{ROUTES}: route geometry for drawing, every {STRIDE} tiles')
+    points = sum(len(c) for row in courses.values() for c in row.values())
+    print(f'{ROUTES}: {points} corner points over {len(off) // 2} pairs, for drawing')
 
 
 if __name__ == '__main__':

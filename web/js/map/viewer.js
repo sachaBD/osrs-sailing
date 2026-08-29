@@ -135,8 +135,9 @@ export function restoreViewOrFit(ports) {
   fit(ports);
 }
 
-/** Wire up pan, zoom and marker clicks. `onPortClick` gets the port name. */
-export function initViewer({ onPortClick }) {
+/** Wire up pan and zoom. Markers are labels, not controls: the map shows the
+    trip you built in the table, and clicking a port does nothing. */
+export function initViewer() {
   Object.assign(el, {
     panel: $('#map-panel'),
     viewport: $('#map-viewport'),
@@ -195,12 +196,6 @@ export function initViewer({ onPortClick }) {
     const box = el.viewport.getBoundingClientRect();
     zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - box.left, e.clientY - box.top);
   }, { passive: false });
-
-  el.svg.addEventListener('click', (e) => {
-    if (moved) return;
-    const marker = e.target.closest('.marker');
-    if (marker) onPortClick(marker.dataset.port);
-  });
 
   return {
     svg: el.svg,

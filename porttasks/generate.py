@@ -5,6 +5,7 @@ from .paths import GENERATED_JS as OUT
 from .paths import TILE_URL_DIR
 from .routing.problem.params import TICK, Params
 from .routing.world.distances import Distances
+from .routing.world.routes import Routes
 from .tables import locations, tasks
 from .tiles import grid
 
@@ -46,6 +47,7 @@ def main():
     task_rows = json.load(open(tasks.JSON_OUT))
     meta = locations.load()
     legs = Distances.load().legs
+    courses = Routes.load().legs
 
     touched = {t[k] for t in task_rows for k in ('noticeBoard', 'from', 'to')}
     missing = sorted(touched - set(meta))
@@ -63,13 +65,16 @@ def main():
         f.write(f'export const MAP_META = {json.dumps(map_info())};\n')
         f.write(f'export const LEGS = {json.dumps(legs, sort_keys=True)};\n')
         f.write(f'export const COSTS = {json.dumps(costs())};\n')
+        # one direction per pair, a < b; the page reverses the other way round
+        f.write(f'export const COURSES = {json.dumps(courses, sort_keys=True)};\n')
 
     coords = sum(1 for v in meta.values() if v.get('coords'))
     regions = sorted({v['region'] for v in meta.values()})
     oceans = sorted({o for v in meta.values() for o in v['oceans']})
     print(f'{OUT}: {len(task_rows)} tasks, {len(meta)} locations, '
           f'{len(regions)} regions, {len(oceans)} oceans, {coords} mapped, '
-          f'{len(legs)} charted ports')
+          f'{len(legs)} charted ports, '
+          f'{sum(len(c) for row in courses.values() for c in row.values())} course points')
 
 
 if __name__ == '__main__':

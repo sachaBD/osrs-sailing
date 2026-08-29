@@ -32,6 +32,7 @@ BOARDS = TABLES / 'boards.tsv'
 TASKS_JSON = DERIVED / 'port_tasks.json'
 TASKS_CSV = DERIVED / 'port_tasks.csv'
 MATRIX = DERIVED / 'port_distances.json'
+PORT_ROUTES = DERIVED / 'port_routes.json'
 
 # web - served to the browser, and generated into
 GENERATED_JS = WEB / 'js' / 'generated.js'
@@ -43,4 +44,3 @@ CACHE = OUT / 'cache'
 RENDERS = OUT / 'renders'
 SHOTS = OUT / 'shots'
 SEA_GRAPH = CACHE / 'sea_graph.json'
-PORT_ROUTES = CACHE / 'port_routes.json'

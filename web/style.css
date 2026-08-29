@@ -124,14 +124,16 @@ tbody tr:hover { background: #221d16; }
 }
 #map-overlay { position: absolute; top: 0; left: 0; overflow: visible; }
 
+/* polylines, so fill has to be turned off or every course becomes a blob */
 .route {
-  stroke: var(--accent); opacity: .38;
-  stroke-linecap: round; vector-effect: non-scaling-stroke;
+  fill: none; stroke: var(--accent); opacity: .38;
+  stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
   pointer-events: stroke;
 }
 .route:hover { opacity: .9; }
 
-.marker { cursor: pointer; }
+/* markers are labels now, not controls: nothing happens on click */
+.marker { cursor: default; }
 .marker .hit {
   fill: transparent;
   /* scales with the dot so the click target stays ~constant on screen;
@@ -155,7 +157,6 @@ tbody tr:hover { background: #221d16; }
 }
 .marker.labelled .label, .marker:hover .label { opacity: 1; }
 .marker.dim .dot { fill: #6b5f4a; opacity: .5; }
-.marker.picked .dot { fill: var(--accent-2); }
 .marker:hover .dot { fill: #fff0c4; }
 
 #map-controls {
@@ -177,11 +178,13 @@ tbody tr:hover { background: #221d16; }
 
 /* ---- trip path on the map ---- */
 .trip-leg {
-  stroke: #a6e07a; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 9 6;
+  fill: none; stroke: #a6e07a; stroke-width: 3; stroke-dasharray: 9 6;
+  stroke-linecap: round; stroke-linejoin: round;
   vector-effect: non-scaling-stroke; pointer-events: none;
 }
 .trip-casing {
-  stroke: #10160c; stroke-width: 7; stroke-linecap: round; opacity: .85;
+  fill: none; stroke: #10160c; stroke-width: 7; opacity: .85;
+  stroke-linecap: round; stroke-linejoin: round;
   vector-effect: non-scaling-stroke; pointer-events: none;
 }
 .marker.on-trip .dot { fill: #a6e07a; }

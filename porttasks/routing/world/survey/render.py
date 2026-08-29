@@ -13,7 +13,6 @@ wrong in either direction.
 from __future__ import annotations
 
 import heapq
-import json
 import sys
 from pathlib import Path
 
@@ -21,10 +20,10 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage
 
-from porttasks.paths import PORT_ROUTES as ROUTES_FILE
 from porttasks.paths import RENDERS
 from porttasks.routing.errors import SurveyError
 
+from ..routes import Routes
 from . import watermask
 from .seagraph import SeaGraph
 
@@ -105,19 +104,16 @@ def _label(draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont, name: str,
     draw.text((x, row - 8), name, font=font, fill=(255, 255, 255))
 
 
-def _lanes(draw: ImageDraw.ImageDraw) -> None:
+def _lanes(draw: ImageDraw.ImageDraw, mask: watermask.WaterMask) -> None:
     """Every port pair's pixel-exact route, stacked up into the sea lanes.
 
     Where many routes share water the colour saturates, which is what a busy
     channel looks like - and an empty ocean with routes skirting it is the
     clearest sign the mask has invented a barrier.
     """
-    with open(ROUTES_FILE) as f:
-        routes = json.load(f)
-    for origin, row in routes.items():
-        for destination, track in row.items():
-            if origin < destination:
-                draw.line([(c, r) for r, c in track], fill=(*LANE, 26), width=2)
+    for _, _, course in Routes.load().pairs():
+        track = [mask.to_rc(x, y) for x, y in course]
+        draw.line([(c, r) for r, c in track], fill=(*LANE, 26), width=2)
 
 
 def render(graph: SeaGraph, mask: watermask.WaterMask, route: list[str] | None = None,
@@ -128,7 +124,7 @@ def render(graph: SeaGraph, mask: watermask.WaterMask, route: list[str] | None =
     node = graph.nodes
 
     if lanes:
-        _lanes(draw)
+        _lanes(draw, mask)
 
     if not lanes:
         for i, links in graph.edges.items():

@@ -27,7 +27,6 @@ export const state = {
   to: new Set(),
   region: new Set(),
   ocean: new Set(),
-  port: new Set(),      // set by clicking markers on the map
   trip: [],             // ordered task ids in the route builder
   tripStart: '',
 };
@@ -43,7 +42,7 @@ const URL_STR = { q: '', board: '', direction: '', scope: 'any',
                   sortKey: 'xp', sortDir: 'desc', tripStart: '' };
 const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120 };
 const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest', 'showAllRoutes', 'mapOpen'];
-const URL_SET = ['from', 'to', 'region', 'ocean', 'port'];
+const URL_SET = ['from', 'to', 'region', 'ocean'];
 const SEP = '~';   // port names hold spaces, commas and apostrophes; never this
 
 /* Param names are part of the app's public surface: links get shared and

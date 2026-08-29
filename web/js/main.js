@@ -20,7 +20,6 @@ function render() {
   stateToUrl();
   renderTable(visibleRows);
   renderTripPanel();
-  $('#map-selection').textContent = state.port.size ? [...state.port].join(', ') : 'none';
   if (view.ready) drawOverlay(viewer.svg, visibleRows);
 }
 
@@ -117,12 +116,7 @@ function wireTrip() {
 }
 
 function wireMap() {
-  viewer = initViewer({
-    onPortClick(name) {
-      if (state.port.has(name)) state.port.delete(name); else state.port.add(name);
-      update();
-    },
-  });
+  viewer = initViewer();
 
   const zoomFromCentre = (factor) => () => {
     const box = $('#map-viewport').getBoundingClientRect();
@@ -131,11 +125,6 @@ function wireMap() {
   $('#map-in').addEventListener('click', zoomFromCentre(1.3));
   $('#map-out').addEventListener('click', zoomFromCentre(1 / 1.3));
   $('#map-fit').addEventListener('click', () => fit(allPorts));
-  $('#map-clear').addEventListener('click', () => {
-    state.port.clear();
-    update();
-  });
-
   $('#map-toggle').addEventListener('click', () => {
     const showing = viewer.isOpen();
     viewer.setOpen(!showing);
