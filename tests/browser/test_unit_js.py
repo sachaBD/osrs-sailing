@@ -15,9 +15,11 @@ def results(browser, repo_url):
     errors: list[str] = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('console', lambda m: errors.append(m.text) if m.type == 'error' else None)
-    page.goto(f'{repo_url}/tests/browser/unit.html', wait_until='networkidle')
-    page.wait_for_timeout(300)
-    out = page.evaluate('() => window.__results || null')
+    page.goto(f'{repo_url}/tests/browser/unit.html', wait_until='commit')
+    # the module writes its results last, so wait for them rather than for a
+    # guess at how long the checks take - one of them deals 40,000 hands
+    page.wait_for_function('() => window.__results', timeout=30_000)
+    out = page.evaluate('() => window.__results')
     page.close()
     assert not errors, 'the module graph did not load: ' + '; '.join(errors[:5])
     assert out, 'no results: the test module did not finish'

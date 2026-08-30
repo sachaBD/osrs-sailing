@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import pytest
 
-from .conftest import pick_multi, rows
+from porttasks.paths import WEB
+
+from .conftest import VIEWPORT, pick_multi, rows, wait_for_fewer_rows, wait_for_rows
 
 TASK_COUNT = 439   # rows in tables/port_tasks.list
 PORT_COUNT = 30
@@ -26,29 +28,26 @@ def test_every_multi_select_filters_and_resets(fresh):
                          ('#f-from', 'Rellekka'), ('#f-to', 'Prifddinas'),
                          ('#f-calls', 'Port Sarim')]:
         pick_multi(fresh, panel, value)
-        assert 0 < rows(fresh) < TASK_COUNT, panel
+        assert 0 < wait_for_fewer_rows(fresh, TASK_COUNT), panel
         assert value.split()[0] in fresh.url, panel
         fresh.click('#reset')
-        fresh.wait_for_timeout(80)
-        assert rows(fresh) == TASK_COUNT, panel
+        wait_for_rows(fresh, TASK_COUNT)
 
 
 def test_scalar_filters_narrow_the_table(fresh):
     fresh.fill('#f-min', '70')
-    fresh.wait_for_timeout(80)
-    by_level = rows(fresh)
-    assert 0 < by_level < TASK_COUNT
+    by_level = wait_for_fewer_rows(fresh, TASK_COUNT)
+    assert by_level > 0
 
     fresh.check('#f-recover')
-    fresh.wait_for_timeout(80)
-    assert rows(fresh) <= by_level
+    fresh.wait_for_function('n => document.querySelectorAll("#tbody tr").length <= n',
+                            arg=by_level)
 
 
 def test_the_url_restores_the_filtered_view(fresh):
     fresh.fill('#f-min', '70')
     fresh.check('#f-recover')
-    fresh.wait_for_timeout(80)
-    expected = rows(fresh)
+    expected = wait_for_fewer_rows(fresh, TASK_COUNT)
 
     fresh.goto(fresh.url, wait_until='networkidle')
     assert rows(fresh) == expected
@@ -60,7 +59,9 @@ def test_the_url_restores_the_filtered_view(fresh):
 @pytest.fixture
 def map_open(fresh):
     fresh.click('#map-toggle')
-    fresh.wait_for_timeout(1200)
+    # the overlay is drawn on the first reveal, so a marker means the viewer
+    # has sized itself, fitted the ports and handed the SVG over
+    fresh.wait_for_selector('#map-overlay .marker')
     return fresh
 
 
@@ -69,13 +70,24 @@ def test_map_opens_with_a_marker_per_port(map_open):
     assert map_open.locator('#map-overlay .marker').count() == PORT_COUNT
 
 
-def test_map_tiles_load(map_open):
-    tiles = map_open.locator('#map-tiles img').count()
-    broken = map_open.evaluate(
-        "Array.from(document.querySelectorAll('#map-tiles img'))"
-        ".filter(i => i.complete && i.naturalWidth === 0).length")
-    assert tiles > 0
-    assert broken == 0, f'{broken} of {tiles} tiles failed to load'
+@pytest.mark.skipif(not any((WEB / 'tiles').glob('**/*.png')),
+                    reason='no web/tiles; run `make tiles` to check the real ones')
+def test_map_tiles_load(browser, app_url):
+    """The tile grid and URL template, against the tiles on disk.
+
+    The only test that loads real tiles, so the only one that needs them there.
+    """
+    page = browser.new_page(viewport=VIEWPORT)
+    try:
+        page.goto(app_url + '/?map=1', wait_until='networkidle')
+        tiles = page.locator('#map-tiles img').count()
+        broken = page.evaluate(
+            "Array.from(document.querySelectorAll('#map-tiles img'))"
+            ".filter(i => i.complete && i.naturalWidth === 0).length")
+        assert tiles > 0
+        assert broken == 0, f'{broken} of {tiles} tiles failed to load'
+    finally:
+        page.close()
 
 
 def _drag(page, steps):
@@ -104,18 +116,15 @@ def test_clicking_a_port_filters_to_its_notice_board(map_open):
     # bbox centre can land in empty space between label and marker
     dot = map_open.locator('#map-overlay .marker.boardable .dot').first
     dot.click()
-    map_open.wait_for_timeout(150)
-    assert 0 < rows(map_open) < TASK_COUNT
+    assert 0 < wait_for_fewer_rows(map_open, TASK_COUNT)
     assert 'board=' in map_open.url
     assert map_open.locator('#f-board').input_value() != ''
 
     dot.click()
-    map_open.wait_for_timeout(150)
-    assert rows(map_open) == TASK_COUNT
+    wait_for_rows(map_open, TASK_COUNT)
     assert 'board=' not in map_open.url
 
-
-def test_a_port_without_a_board_is_not_clickable(map_open):
+    # and the ports without a board are not offered as clickable at all
     boardable = map_open.locator('#map-overlay .marker.boardable').count()
     total = map_open.locator('#map-overlay .marker').count()
     assert 0 < boardable < total, f'{boardable} of {total}'
@@ -123,17 +132,24 @@ def test_a_port_without_a_board_is_not_clickable(map_open):
 
 # --- the route builder -------------------------------------------------------
 
-@pytest.fixture
-def trip(map_open):
-    """Four tasks added to the trip, with the map open.
+# the four highest-XP tasks, which is what the table's default sort puts on top
+TRIP = '1~2~3~4'
 
-    The map has to be open: a trip's legs and the ports it sails past are
-    drawn in the map overlay, not in the trip panel.
+
+@pytest.fixture
+def trip(fresh):
+    """Four tasks in the trip, with the map open.
+
+    Built through the URL rather than by clicking, because ten tests want a
+    trip and none of them is about how one is assembled - the + button has
+    `test_the_button_adds_a_task_to_the_trip` to itself. The map has to be
+    open: a trip's legs and the ports it sails past are drawn in the overlay,
+    not in the trip panel.
     """
-    for i in range(4):
-        map_open.locator('#tbody .trip-btn').nth(i).click()
-        map_open.wait_for_timeout(60)
-    return map_open
+    fresh.goto(f'{fresh.base_url}?map=1&trip={TRIP}', wait_until='commit')
+    fresh.wait_for_selector('#map-overlay .marker')
+    fresh.wait_for_selector('#trip-panel:not([hidden])')
+    return fresh
 
 
 def test_trip_sequences_into_stops_and_legs(trip):
@@ -152,18 +168,17 @@ def test_trip_sequences_into_stops_and_legs(trip):
     assert 'trip=' in trip.url
 
 
-def test_pickups_precede_deliveries(trip):
-    order = trip.evaluate('''() => {
-      const t = __app.currentTrip();
-      const seen = {};
-      let ok = true;
-      t.stops.forEach((s, i) => {
-        s.picks.forEach(p => { seen[p.id] = i; });
-        s.drops.forEach(d => { if (!(d.id in seen) || seen[d.id] > i) ok = false; });
-      });
-      return { ok, stops: t.stops.length, tasks: t.tasks.length };
-    }''')
-    assert order['ok'], order
+def test_the_button_adds_a_task_to_the_trip(fresh):
+    """How a trip gets built. Every other trip test loads one from the URL."""
+    assert not fresh.is_visible('#trip-panel')
+    fresh.locator('#tbody .trip-btn').first.click()
+    fresh.wait_for_selector('#trip-panel:not([hidden])')
+    assert 'trip=' in fresh.url
+    assert fresh.locator('#trip-stops li').count() == 2   # a pickup and a delivery
+
+    fresh.locator('#tbody .trip-btn').first.click()       # and it toggles back off
+    # `hidden` is never "visible", so wait on the attribute rather than on sight
+    fresh.wait_for_selector('#trip-panel[hidden]', state='attached')
 
 
 def _passing_ports(page) -> list[str]:
@@ -175,13 +190,12 @@ def test_a_passing_port_filters_to_tasks_at_either_end(trip):
     offer": a port you sail past is worth a call if a task loads or delivers
     there, whoever posted it."""
     trip.fill('#trip-corridor', '400')     # wide enough to be sure of a chip
-    trip.wait_for_timeout(120)
     ports = _passing_ports(trip)
     assert ports, 'no ports listed as passed'
 
     trip.locator('#trip-passing .pass').first.click()
-    trip.wait_for_timeout(150)
     port = ports[0]
+    wait_for_fewer_rows(trip, TASK_COUNT)
     assert 'calls=' in trip.url
     assert 'board=' not in trip.url
     assert 0 < rows(trip) < TASK_COUNT
@@ -191,8 +205,7 @@ def test_a_passing_port_filters_to_tasks_at_either_end(trip):
     assert all(port in row for row in ends), (port, ends[:3])
 
     trip.locator('#trip-passing .pass').first.click()   # clicking again clears it
-    trip.wait_for_timeout(150)
-    assert rows(trip) == TASK_COUNT
+    wait_for_rows(trip, TASK_COUNT)
     assert 'calls=' not in trip.url
 
 
@@ -203,7 +216,6 @@ def test_every_passing_port_is_clickable(trip):
     worth offering on those chips too.
     """
     trip.fill('#trip-corridor', '400')
-    trip.wait_for_timeout(120)
     chips = trip.locator('#trip-passing .pass').count()
     assert chips > 0
     assert trip.locator('#trip-passing button.pass[data-port]').count() == chips
@@ -218,15 +230,15 @@ def _lifts(page) -> list[float | None]:
             for c in cells]
 
 
-def test_the_lift_column_needs_a_trip(fresh):
-    """With no trip there is nothing to lift, and XP/hr already answers the
-    standalone case."""
+def test_nothing_is_priced_against_a_trip_that_does_not_exist(fresh):
+    """Both of the trip-relative measures go quiet together: there is no rate
+    to price against, and XP/hr already answers the standalone case."""
     assert set(_lifts(fresh)) == {None}
+    assert not fresh.is_visible('#boards-panel')
 
 
 def test_the_lift_ranks_what_to_add_to_the_trip(trip):
     trip.click('th[data-key="lift"]')          # sorts descending by default
-    trip.wait_for_timeout(200)
     values = _lifts(trip)
     known = [v for v in values if v is not None]
 
@@ -241,7 +253,6 @@ def test_the_lift_moves_when_the_trip_does(trip):
     """It is a lift against this trip, not a property of the task."""
     before = _lifts(trip)
     trip.locator('#tbody .trip-btn').nth(8).click()   # one more task in the trip
-    trip.wait_for_timeout(200)
     assert _lifts(trip) != before
 
 
@@ -252,10 +263,6 @@ def _boards(page) -> list[list[str]]:
 
 def _value(cell: str) -> float:
     return float(cell.replace(',', ''))
-
-
-def test_boards_are_valued_only_against_a_trip(fresh):
-    assert not fresh.is_visible('#boards-panel')
 
 
 def test_boards_rank_by_what_a_stop_is_worth(trip):
@@ -271,7 +278,6 @@ def test_boards_rank_by_what_a_stop_is_worth(trip):
 def test_more_room_in_the_hold_never_lowers_a_board(trip):
     one = {r[0]: _value(r[2]) for r in _boards(trip)}
     trip.fill('#board-slots', '3')
-    trip.wait_for_timeout(200)
     three = {r[0]: _value(r[2]) for r in _boards(trip)}
     assert three, 'the panel emptied when the hold grew'
     assert all(v >= one.get(port, 0) for port, v in three.items())
@@ -287,19 +293,15 @@ def test_the_map_shows_what_each_board_is_worth(trip):
     assert max(haloed) > min(haloed)
 
     trip.click('#trip-clear')
-    trip.wait_for_timeout(200)
     assert trip.locator('#map-overlay .marker .worth').count() == 0
 
 
 def test_clearing_the_trip_closes_the_panel(trip):
     trip.click('#trip-clear')
-    trip.wait_for_timeout(100)
     assert not trip.is_visible('#trip-panel')
 
 
 # --- on a phone ---------------------------------------------------------------
-
-PHONE = {'width': 390, 'height': 844}
 
 # Two fingers, dispatched as the pointer events a touch screen would raise.
 # Playwright drives one touch point at a time, so a real pinch has to be
@@ -324,17 +326,6 @@ PINCH = """([spread, steps]) => {
   send('pointerup', 2, cx, cy);
   return __app.view.scale;
 }"""
-
-
-@pytest.fixture
-def phone(browser, app_url):
-    """The app on a touch screen the size of a phone."""
-    context = browser.new_context(viewport=PHONE, has_touch=True, is_mobile=True)
-    page = context.new_page()
-    page.goto(app_url + '/?map=1', wait_until='networkidle')
-    page.wait_for_timeout(1000)
-    yield page
-    context.close()
 
 
 def test_the_page_fits_a_phone(phone):
@@ -362,16 +353,13 @@ def test_a_phone_starts_with_the_filters_folded(phone):
     assert phone.is_visible('#map-viewport')
 
     phone.click('#filters-toggle')
-    phone.wait_for_timeout(120)
     assert phone.is_visible('#f-q')
 
 
 def test_a_folded_bar_still_says_it_is_filtering(phone):
     phone.click('#filters-toggle')
     phone.fill('#f-min', '70')
-    phone.wait_for_timeout(120)
     phone.click('#filters-toggle')
-    phone.wait_for_timeout(120)
     assert not phone.is_visible('#f-q')
     assert 'of' in phone.text_content('#filters-toggle')
 
@@ -380,7 +368,6 @@ def test_tap_targets_are_big_enough_to_hit(phone):
     """iOS zooms the page when a control under 16px takes focus, which throws
     away the viewport the map is sized against."""
     phone.click('#filters-toggle')
-    phone.wait_for_timeout(120)
     fonts = phone.eval_on_selector_all(
         '.filters input, .filters select',
         'els => els.map(e => parseFloat(getComputedStyle(e).fontSize))')
