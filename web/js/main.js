@@ -1,6 +1,6 @@
 /* Bootstrap and event wiring. The only module that knows about all the others. */
 import { $, $$ } from './dom.js';
-import { allPorts, allRegions, allOceans, MAP_META } from './ports.js';
+import { TASKS, allPorts, allRegions, allOceans, MAP_META } from './ports.js';
 import {
   state, subscribe, update, stateToUrl, urlToState,
   restoreFromStorageIfBare, resetState, DEFAULTS,
@@ -20,6 +20,8 @@ function render() {
   visibleRows = sorted(filtered());
   stateToUrl();
   renderTable(visibleRows);
+  $('#filters-toggle').textContent = visibleRows.length === TASKS.length
+    ? 'Filters' : `Filters · ${visibleRows.length} of ${TASKS.length}`;
   renderTripPanel();
   // valued once, drawn twice: the panel ranks the boards and the map marks them
   const boards = boardValues(visibleRows);
@@ -94,6 +96,20 @@ function wireFilters() {
       update();
     });
   });
+
+  // On a phone the filter bar is a screenful of its own, which puts the map
+  // and the table below the fold before you have done anything. Fold it away
+  // there, and say on the button when something is filtering, so a folded bar
+  // cannot quietly hide why the table looks short.
+  const narrow = window.matchMedia('(max-width: 760px)');
+  const fold = (on) => {
+    $('#filters').classList.toggle('folded', on);
+    $('#filters-toggle').setAttribute('aria-expanded', String(!on));
+  };
+  fold(narrow.matches);
+  narrow.addEventListener('change', (e) => fold(e.matches));
+  $('#filters-toggle').addEventListener('click',
+    () => fold(!$('#filters').classList.contains('folded')));
 
   $('#reset').addEventListener('click', () => {
     resetState();

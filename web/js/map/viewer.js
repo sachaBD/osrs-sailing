@@ -150,7 +150,34 @@ export function initViewer({ onPortClick }) {
 
   let dragging = false, moved = false, lastX = 0, lastY = 0, startX = 0, startY = 0;
 
+  /* Fingers currently on the glass. One pans, two pinch. Pointer events give
+     mouse, pen and touch in the same shape, so this is the only place the map
+     needs to know a touch screen exists - `touch-action: none` on the viewport
+     is what stops the browser scrolling the page out from under the gesture. */
+  const down = new Map();
+
+  /** The span and midpoint of the two fingers, in viewport coordinates. */
+  function gauge() {
+    const [a, b] = [...down.values()];
+    const box = el.viewport.getBoundingClientRect();
+    return {
+      dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
+      cx: (a.x + b.x) / 2 - box.left,
+      cy: (a.y + b.y) / 2 - box.top,
+    };
+  }
+  let pinch = null;
+
   el.viewport.addEventListener('pointerdown', (e) => {
+    down.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (down.size === 2) {
+      // a second finger turns a pan into a pinch, and never into a tap
+      pinch = gauge();
+      dragging = false;
+      moved = true;
+      return;
+    }
+    if (down.size > 2) return;
     dragging = true;
     moved = false;
     lastX = startX = e.clientX;
@@ -161,6 +188,21 @@ export function initViewer({ onPortClick }) {
   });
 
   el.viewport.addEventListener('pointermove', (e) => {
+    if (!down.has(e.pointerId)) return;
+    down.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pinch && down.size >= 2) {
+      const now = gauge();
+      // the midpoint carries the pan, the span carries the zoom, so two
+      // fingers can drag and scale in one gesture the way a map should
+      view.x += now.cx - pinch.cx;
+      view.y += now.cy - pinch.cy;
+      const spread = now.dist / pinch.dist;
+      pinch = now;
+      zoomAt(spread, now.cx, now.cy);
+      return;
+    }
+
     if (!dragging) return;
     if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 3) {
       moved = true;
@@ -176,6 +218,17 @@ export function initViewer({ onPortClick }) {
   });
 
   const endDrag = (e) => {
+    down.delete(e.pointerId);
+    if (down.size < 2) pinch = null;
+    if (down.size === 1) {
+      // one finger lifted mid-pinch: hand panning back to the other one
+      // rather than jumping the map by wherever it happens to be
+      const [rest] = down.values();
+      lastX = startX = rest.x;
+      lastY = startY = rest.y;
+      dragging = true;
+      return;
+    }
     dragging = false;
     if (el.viewport.hasPointerCapture?.(e.pointerId)) {
       el.viewport.releasePointerCapture(e.pointerId);
@@ -190,6 +243,14 @@ export function initViewer({ onPortClick }) {
   // pointerdown would not.
   el.viewport.addEventListener('dragstart', (e) => e.preventDefault());
   el.viewport.addEventListener('selectstart', (e) => e.preventDefault());
+
+  /* Safari sends its own pinch as `gesture*` events on top of the pointer
+     events the pinch above already handles, and left alone it zooms the whole
+     page - which throws away the layout the map is sized against. Cancelling
+     them leaves the pointer events, and so the pinch, untouched. */
+  for (const name of ['gesturestart', 'gesturechange', 'gestureend']) {
+    el.viewport.addEventListener(name, (e) => e.preventDefault());
+  }
 
   el.viewport.addEventListener('wheel', (e) => {
     e.preventDefault();

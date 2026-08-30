@@ -16,10 +16,13 @@ body {
   font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
 }
 header {
+  display: flex; align-items: center; gap: 14px;
   padding: 18px 22px 12px;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg, #2b241a, #1c1812);
 }
+/* the filter bar is always open on a desktop, so its control has no place there */
+#filters-toggle { display: none; margin-left: auto; align-self: center; }
 h1 { margin: 0; font-size: 20px; letter-spacing: .5px; color: var(--accent); }
 h1 span { color: var(--muted); font-size: 13px; font-weight: 400; margin-left: 10px; }
 
@@ -49,7 +52,7 @@ button:hover { border-color: var(--accent); color: var(--accent); }
 }
 #stats b { color: var(--text); }
 
-.table-wrap { padding: 0 22px 40px; }
+.table-wrap { padding: 0 22px 40px; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #322a1f; }
 th {
@@ -112,7 +115,7 @@ tbody tr:hover { background: #221d16; }
 /* ---- map ---- */
 #map-panel { border-bottom: 1px solid var(--line); background: #12100c; }
 #map-viewport {
-  position: relative; height: 66vh; min-height: 400px;
+  position: relative; height: 66vh; min-height: min(400px, 55vh);
   overflow: hidden; cursor: grab; touch-action: none;
   /* without this a drag selects the map labels instead of panning */
   user-select: none; -webkit-user-select: none;
@@ -292,3 +295,54 @@ label.inline { display: flex; align-items: center; gap: 6px; color: var(--muted)
 #trip-passing .pass.has-board { border-color: var(--accent); color: var(--text); }
 #trip-passing .pass.on { background: #4a3410; color: var(--accent); border-color: var(--accent); }
 #trip-passing .pass i { color: var(--muted); font-style: normal; opacity: .7; }
+
+
+/* ---- touch, and small screens ----
+
+   The map is the part that has to change: `touch-action: none` on the viewport
+   hands the browser's gestures to the viewer (see map/viewer.js), so nothing
+   pans or zooms the page there, and everything a finger can hit has to be big
+   enough to hit. The rest is the ordinary narrow-screen tightening. */
+
+@media (pointer: coarse) {
+  /* a fingertip is about 9mm; the marker's own dot stays the size it was */
+  .marker .hit { r: 22px; }
+  #map-controls { gap: 10px; padding: 7px 10px; }
+  #map-controls button { padding: 7px 14px; font-size: 15px; }
+  .trip-btn { padding: 4px 12px; font-size: 16px; }
+  .ms-button, .pass { min-height: 38px; }
+}
+
+@media (max-width: 760px) {
+  /* iOS zooms the whole page when a font under 16px takes focus, which throws
+     away the viewport scale the map depends on */
+  input, select, .ms-button { font-size: 16px; }
+
+  header { padding: 12px 14px 10px; }
+  h1 { font-size: 17px; }
+  h1 span { display: block; margin: 2px 0 0; }
+
+  .filters { padding: 10px 14px; gap: 8px; }
+  .field { flex: 1 1 150px; min-width: 0; }
+  #f-q, .ms-button, #trip-stops li { min-width: 0; }
+  .filters button { flex: 1 1 auto; }
+  .check { flex: 1 1 100%; align-self: auto; padding-bottom: 0; }
+
+  #stats { gap: 12px; padding: 10px 14px; font-size: 12px; }
+  .table-wrap { padding: 0 14px 30px; }
+  th, td { padding: 6px 7px; }
+
+  #filters-toggle { display: block; }
+  .filters.folded { display: none; }
+  /* fourteen columns will not fit a phone, and squeezing them makes a mess of
+     all of them: let the table keep its shape and scroll inside its own box */
+  .table-wrap table { min-width: 860px; }
+
+  #map-viewport { height: 58vh; }
+  #map-legend { padding: 8px 14px; gap: 10px; }
+  .trip-head, #trip-stops, #trip-passing, #boards-panel { padding-left: 14px; padding-right: 14px; }
+  #trip-summary { flex-wrap: wrap; gap: 10px; }
+  .boards-head label { margin-left: 0; }
+  /* the boards table is the one table narrow enough to keep whole */
+  #boards-table { font-size: 11px; }
+}

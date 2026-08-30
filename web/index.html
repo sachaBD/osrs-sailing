@@ -9,9 +9,10 @@
 <body>
 <header>
   <h1>OSRS Port Tasks <span id="count-hint">Sailing cargo deliveries</span></h1>
+  <button id="filters-toggle" aria-expanded="true" aria-controls="filters">Filters</button>
 </header>
 
-<div class="filters">
+<div class="filters" id="filters">
   <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="port name…"></div>
   <div class="field"><label for="f-board">Notice board</label><select id="f-board"></select></div>
   <div class="field"><label>Region</label><div class="ms" id="f-region"></div></div>
