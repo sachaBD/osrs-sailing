@@ -245,12 +245,37 @@ th.unsortable { cursor: default; }
 th.unsortable:hover { color: var(--muted); }
 label.inline { display: flex; align-items: center; gap: 6px; color: var(--muted); }
 
+/* what a board is worth stopping at, as an area behind the port */
+.marker .worth { fill: var(--accent-2); opacity: .22; pointer-events: none; }
+.marker.worth-a-stop:hover .worth { opacity: .34; }
+
 /* ports the route sails past without stopping */
 .marker.near-route .dot {
   fill: #2b2318; stroke: var(--accent); stroke-width: 3;
   vector-effect: non-scaling-stroke;
 }
 .marker.near-route .label { fill: var(--accent); }
+/* boards worth a stop: the trip panel's sibling, same furniture */
+#boards-panel {
+  border-bottom: 1px solid var(--line); background: var(--panel);
+  padding: 12px 22px 14px;
+}
+.boards-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.boards-head h2 { margin: 0; font-size: 15px; color: var(--accent-2); letter-spacing: .5px; }
+.boards-head .muted { font-size: 12px; }
+.boards-head label { margin-left: auto; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--muted); }
+.boards-head input { width: 56px; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; font: inherit; }
+#boards-table { border-collapse: collapse; margin-top: 8px; font-size: 12px;
+  width: 100%; max-width: 620px; }
+#boards-table th { text-align: left; color: var(--muted); font-weight: 500;
+  text-transform: uppercase; letter-spacing: .6px; font-size: 10px; padding: 2px 14px 4px 0; }
+#boards-table th.num, #boards-table td.num { text-align: right; }
+#boards-table td { padding: 2px 14px 2px 0; border-top: 1px solid #2a2419; }
+#boards-table .board-value { color: var(--accent-2); font-weight: 600; }
+#boards-dead { margin-top: 8px; font-size: 11px; }
+
 #trip-passing {
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
   padding: 0 22px 12px; font-size: 12px; color: var(--muted);

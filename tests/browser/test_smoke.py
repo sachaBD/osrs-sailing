@@ -245,6 +245,52 @@ def test_the_lift_moves_when_the_trip_does(trip):
     assert _lifts(trip) != before
 
 
+def _boards(page) -> list[list[str]]:
+    return page.eval_on_selector_all(
+        '#boards-rows tr', 'rs => rs.map(r => [...r.children].map(c => c.textContent.trim()))')
+
+
+def _value(cell: str) -> float:
+    return float(cell.replace(',', ''))
+
+
+def test_boards_are_valued_only_against_a_trip(fresh):
+    assert not fresh.is_visible('#boards-panel')
+
+
+def test_boards_rank_by_what_a_stop_is_worth(trip):
+    rows = _boards(trip)
+    assert rows, 'no board is worth a stop against this trip'
+    values = [_value(r[2]) for r in rows]
+    assert values == sorted(values, reverse=True)
+    assert all(v > 0 for v in values), 'worthless boards belong in the tail count'
+    # the luckiest draw is an upper bound on the average one
+    assert all(_value(r[4]) >= _value(r[2]) for r in rows)
+
+
+def test_more_room_in_the_hold_never_lowers_a_board(trip):
+    one = {r[0]: _value(r[2]) for r in _boards(trip)}
+    trip.fill('#board-slots', '3')
+    trip.wait_for_timeout(200)
+    three = {r[0]: _value(r[2]) for r in _boards(trip)}
+    assert three, 'the panel emptied when the hold grew'
+    assert all(v >= one.get(port, 0) for port, v in three.items())
+    assert 'freeSlots=3' in trip.url
+
+
+def test_the_map_shows_what_each_board_is_worth(trip):
+    """The halo is the map's half of the same number the panel ranks."""
+    haloed = trip.eval_on_selector_all(
+        '#map-overlay .marker.worth-a-stop .worth', 'cs => cs.map(c => +c.getAttribute("r"))')
+    assert len(haloed) == len(_boards(trip))
+    # area carries the value, so the best board draws the largest disc
+    assert max(haloed) > min(haloed)
+
+    trip.click('#trip-clear')
+    trip.wait_for_timeout(200)
+    assert trip.locator('#map-overlay .marker .worth').count() == 0
+
+
 def test_clearing_the_trip_closes_the_panel(trip):
     trip.click('#trip-clear')
     trip.wait_for_timeout(100)

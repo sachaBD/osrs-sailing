@@ -79,6 +79,28 @@
   <div id="trip-passing" hidden></div>
 </section>
 
+<section id="boards-panel" hidden>
+  <div class="boards-head">
+    <h2>Boards worth a stop</h2>
+    <span id="boards-note" class="muted"></span>
+    <label for="board-slots" title="How much room the hold has for new work">Free slots</label>
+    <input id="board-slots" type="number" min="1" max="5" step="1" value="1">
+  </div>
+  <table id="boards-table">
+    <thead>
+      <tr>
+        <th>Board</th>
+        <th class="num" title="Sailing time to this board from the nearest stop your trip already makes, one way. Context only: the expected value already prices the sailing">Reach</th>
+        <th class="num" title="What an average draw from this board is worth, once the sailing it costs is priced at your trip's own rate">Expected</th>
+        <th class="num" title="Offers you would actually take, out of the pool the board draws from. The rest are dead draws: inbound work, or tasks your filters rule out">Usable</th>
+        <th class="num" title="The best single task in the pool, if the draw goes your way">Luckiest</th>
+      </tr>
+    </thead>
+    <tbody id="boards-rows"></tbody>
+  </table>
+  <div id="boards-dead" class="muted"></div>
+</section>
+
 <div id="stats"></div>
 
 <div class="table-wrap">

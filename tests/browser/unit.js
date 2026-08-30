@@ -188,6 +188,66 @@ check('the lift follows the trip it is measured against', (() => {
   return one !== two;
 })());
 
+/* ---- what a board is worth stopping at ---- */
+import { bestOfDraw, boardValues, POOLS } from '../../web/js/boards.js';
+
+check('a flat pool is worth its one value however it is drawn',
+  near(bestOfDraw([5, 5, 5, 5, 5, 5, 5, 5], 3, 1), 5, 1e-9));
+check('taking every offer takes the whole pool',
+  near(bestOfDraw([4, 3, 2, 1], 4, 4), 10, 1e-9));
+check('worthless offers are dead draws, not absent ones', (() => {
+  // the same two good tasks, buried in a pool of duds: the draw finds them
+  // less often, so the board is worth less
+  const rich = bestOfDraw([9, 7], 5, 1);
+  const buried = bestOfDraw([9, 7, 0, 0, 0, 0, 0, 0, 0, 0], 5, 1);
+  return buried < rich;
+})());
+check('more slots and more offers never hurt', (() => {
+  const pool = [9, 8, 6, 5, 3, 2, 1];
+  const rising = (f) => [1, 2, 3].every((i) => f(i) >= f(i - 1) - 1e-9);
+  return rising((n) => bestOfDraw(pool, 4, n)) && rising((m) => bestOfDraw(pool, m + 2, 2));
+})());
+
+/* The formula is a hypergeometric identity, so the honest test of it is a
+   draw. 40k shuffles of an eight-task pool, keeping the best two of three. */
+const dealt = (() => {
+  const pool = [90, 61, 44, 30, 21, 13, 8, 2];
+  const runs = 40000;
+  let total = 0;
+  for (let r = 0; r < runs; r++) {
+    const deck = pool.slice();
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    const hand = deck.slice(0, 3).sort((a, b) => b - a);
+    total += hand[0] + hand[1];
+  }
+  return { pool, mean: total / runs, closed: bestOfDraw(pool, 3, 2) };
+})();
+check('the closed form matches dealing the cards',
+  Math.abs(dealt.mean - dealt.closed) / dealt.closed < 0.02,
+  `dealt ${dealt.mean.toFixed(1)} vs ${dealt.closed.toFixed(1)}`);
+
+check('every board draws from a pool of its own tasks',
+  [...POOLS.entries()].every(([board, pool]) => pool.every((t) => t.noticeBoard === board)));
+check('no trip, no board values',
+  withState({ trip: [] }, () => boardValues(TASKS).length === 0));
+check('a board is worth less when fewer of its offers are usable', (() => {
+  const all = withState({ trip: tripIds, freeSlots: 1 },
+    () => new Map(boardValues(TASKS).map((b) => [b.port, b.value])));
+  // the same trip, but only half the tasks pass the filters
+  const half = withState({ trip: tripIds, freeSlots: 1 },
+    () => new Map(boardValues(TASKS.filter((t) => t.id % 2 === 0)).map((b) => [b.port, b.value])));
+  return [...half].every(([port, v]) => v <= all.get(port) + 1e-9)
+    && [...all.values()].some((v) => v > 0);
+})());
+check('board values are sorted, best stop first',
+  withState({ trip: tripIds, freeSlots: 1 }, () => {
+    const vs = boardValues(TASKS).map((b) => b.value);
+    return vs.every((v, i) => i === 0 || vs[i - 1] >= v);
+  }));
+
 /* ---- ports near the route ---- */
 check('stops are never listed as passed', (() => {
   const near200 = portsNearRoute(trip.stops, 200);
