@@ -29,39 +29,43 @@ function render() {
   if (view.ready) drawOverlay(viewer.svg, visibleRows, boards);
 }
 
-/** Bind a control to a state key, re-rendering on change. */
-function bind(selector, key, parse = (v) => v) {
-  $(selector).addEventListener('input', (e) => {
-    state[key] = parse(e.target.type === 'checkbox' ? e.target.checked : e.target.value);
-    update();
-  });
-}
+/* A control that edits one state key says which in the markup, and these two
+   read that same declaration. Wiring and syncing used to be two hand-kept
+   lists of the same fourteen facts, which is precisely how a control ships
+   dead: bound but never synced, or synced but never bound. */
 
-const numberOr = (fallback) => (v) => (v === '' ? fallback : Number(v));
+const controls = () => $$('[data-state]');
 
-function fillSelect(selector, values, placeholder) {
-  $(selector).innerHTML = `<option value="">${placeholder}</option>` +
-    values.map((v) => `<option value="${v}">${v}</option>`).join('');
+function bindControls() {
+  for (const el of controls()) {
+    const key = el.dataset.state;
+    // a typo in the markup would otherwise quietly invent a state key
+    if (!(key in state)) throw new Error(`${el.id}: no state key "${key}"`);
+    el.addEventListener('input', () => {
+      state[key] = el.type === 'checkbox' ? el.checked
+        : el.type === 'number' ? (el.value === '' ? DEFAULTS[key] : Number(el.value))
+        : el.value;
+      update();
+    });
+  }
 }
 
 /** Push state into the controls, for links and restored sessions. */
 function syncControls() {
-  const set = (selector, value) => { const el = $(selector); if (el) el.value = value; };
-  set('#f-q', state.q);
-  set('#f-board', state.board);
-  set('#f-direction', state.direction);
-  set('#f-scope', state.scope);
-  set('#f-min', state.minLevel === DEFAULTS.minLevel ? '' : state.minLevel);
-  set('#f-max', state.maxLevel === DEFAULTS.maxLevel ? '' : state.maxLevel);
-  set('#f-xpmin', state.minXp === null ? '' : state.minXp);
-  set('#f-xpmax', state.maxXp === null ? '' : state.maxXp);
-  set('#trip-corridor', state.corridor);
-  set('#board-slots', state.freeSlots);
-  $('#f-unknown').checked = state.hideUnknownXp;
-  $('#f-recover').checked = state.recoverAtOrigin;
-  $('#f-board-dest').checked = state.boardAtDest;
-  $('#f-all-routes').checked = state.showAllRoutes;
+  for (const el of controls()) {
+    const value = state[el.dataset.state];
+    if (el.type === 'checkbox') el.checked = value;
+    // a control with a placeholder shows nothing at its default: the
+    // placeholder is already saying what that default is
+    else el.value = value === null || (el.placeholder && value === DEFAULTS[el.dataset.state])
+      ? '' : value;
+  }
   $$('.ms').forEach((ms) => ms._multi.apply());
+}
+
+function fillSelect(selector, values, placeholder) {
+  $(selector).innerHTML = `<option value="">${placeholder}</option>` +
+    values.map((v) => `<option value="${v}">${v}</option>`).join('');
 }
 
 function wireFilters() {
@@ -72,21 +76,7 @@ function wireFilters() {
   multiSelect('#f-region', allRegions, 'Any region', state.region, update);
   multiSelect('#f-ocean', allOceans, 'Any ocean', state.ocean, update);
   closeMenusOnOutsideClick();
-
-  bind('#f-q', 'q');
-  bind('#f-board', 'board');
-  bind('#f-direction', 'direction');
-  bind('#f-scope', 'scope');
-  bind('#f-unknown', 'hideUnknownXp');
-  bind('#f-recover', 'recoverAtOrigin');
-  bind('#f-board-dest', 'boardAtDest');
-  bind('#f-all-routes', 'showAllRoutes');
-  bind('#f-min', 'minLevel', numberOr(DEFAULTS.minLevel));
-  bind('#f-max', 'maxLevel', numberOr(DEFAULTS.maxLevel));
-  bind('#f-xpmin', 'minXp', numberOr(null));
-  bind('#f-xpmax', 'maxXp', numberOr(null));
-  bind('#trip-corridor', 'corridor', numberOr(DEFAULTS.corridor));
-  bind('#board-slots', 'freeSlots', numberOr(DEFAULTS.freeSlots));
+  bindControls();
 
   $$('th[data-key]').forEach((th) => {
     th.addEventListener('click', () => {

@@ -7,11 +7,8 @@ import { $, esc } from './dom.js';
 import { state } from './state.js';
 import { TASK_BY_ID, LOCATIONS, portXY, hasBoardAt } from './ports.js';
 import { courseBetween } from './course.js';
-import { legDistance, routeSeconds, formatDuration, COST_NOTE } from './cost.js';
-
-/** Default width of the "on the way" corridor, in game tiles; adjustable in
-    the trip panel. The whole map spans about 1,700 tiles. */
-export const ROUTE_CORRIDOR = 120;
+import { legDistance, routeSeconds, formatDuration, round, COST_NOTE }
+  from './cost.js';
 
 /** Shortest distance from point p to the segment a-b.
 
@@ -84,7 +81,7 @@ export function sequenceTrip(tasks, startPort) {
 /** Ports the route sails past without stopping -> Map(name -> {dist, leg}). */
 export function portsNearRoute(stops, corridor) {
   // ?? not ||: a corridor of 0 is a real choice, not an absent one
-  const limit = corridor ?? state.corridor ?? ROUTE_CORRIDOR;
+  const limit = corridor ?? state.corridor;
   const stopping = new Set(stops.map((s) => s.port));
 
   // Measured against the water the ship actually sails, not the chord between
@@ -227,11 +224,11 @@ export function renderTripPanel() {
   $('#trip-summary').innerHTML =
     `<span><b>${tasks.length}</b> task${tasks.length === 1 ? '' : 's'}</span>` +
     `<span><b>${stops.length}</b> stops</span>` +
-    `<span>XP <b>${xp.toLocaleString()}</b>` +
+    `<span>XP <b>${round(xp)}</b>` +
     (unknown ? ` <span class="unknown">+${unknown} unknown</span>` : '') + '</span>' +
-    `<span>~<b>${Math.round(travelled).toLocaleString()}</b> tiles sailed</span>` +
+    `<span>~<b>${round(travelled)}</b> tiles sailed</span>` +
     `<span title="${esc(COST_NOTE)}">~<b>${formatDuration(seconds)}</b></span>` +
-    `<span title="${esc(COST_NOTE)}">XP/hr <b>${Math.round(rate).toLocaleString()}</b></span>`;
+    `<span title="${esc(COST_NOTE)}">XP/hr <b>${round(rate)}</b></span>`;
 
   const ports = [...new Set(tasks.flatMap((t) => [t.from, t.to]))].sort();
   $('#trip-start').innerHTML = '<option value="">Start anywhere</option>' +
@@ -242,7 +239,7 @@ export function renderTripPanel() {
     const acts = [
       ...s.picks.map((t) => `<span class="pick">load</span> ${t.qty} &rarr; ${esc(t.to)}`),
       ...s.drops.map((t) => `<span class="drop">deliver</span> ${t.qty} from ${esc(t.from)}` +
-        (t.xp ? ` <b>${t.xp.toLocaleString()}</b> xp` : '')),
+        (t.xp ? ` <b>${round(t.xp)}</b> xp` : '')),
     ];
     return `<li><span class="n">${i + 1}</span><span class="port">${esc(s.port)}</span>` +
       `<span class="acts">${acts.join('<br>')}</span></li>`;
