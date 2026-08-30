@@ -297,6 +297,100 @@ def test_clearing_the_trip_closes_the_panel(trip):
     assert not trip.is_visible('#trip-panel')
 
 
+# --- on a phone ---------------------------------------------------------------
+
+PHONE = {'width': 390, 'height': 844}
+
+# Two fingers, dispatched as the pointer events a touch screen would raise.
+# Playwright drives one touch point at a time, so a real pinch has to be
+# synthesised; what it exercises is the viewer's own handler, which is the part
+# that can break.
+PINCH = """([spread, steps]) => {
+  const vp = document.querySelector('#map-viewport');
+  const box = vp.getBoundingClientRect();
+  const send = (type, id, x, y) => vp.dispatchEvent(new PointerEvent(type, {
+    pointerId: id, pointerType: 'touch', isPrimary: id === 1,
+    clientX: x, clientY: y, bubbles: true, cancelable: true }));
+  const [cx, cy] = [box.left + box.width / 2, box.top + box.height / 2];
+  const reach = 60;
+  send('pointerdown', 1, cx - reach, cy);
+  send('pointerdown', 2, cx + reach, cy);
+  for (let i = 1; i <= steps; i++) {
+    const r = reach * (1 + (spread - 1) * (i / steps));
+    send('pointermove', 1, cx - r, cy);
+    send('pointermove', 2, cx + r, cy);
+  }
+  send('pointerup', 1, cx, cy);
+  send('pointerup', 2, cx, cy);
+  return __app.view.scale;
+}"""
+
+
+@pytest.fixture
+def phone(browser, app_url):
+    """The app on a touch screen the size of a phone."""
+    context = browser.new_context(viewport=PHONE, has_touch=True, is_mobile=True)
+    page = context.new_page()
+    page.goto(app_url + '/?map=1', wait_until='networkidle')
+    page.wait_for_timeout(1000)
+    yield page
+    context.close()
+
+
+def test_the_page_fits_a_phone(phone):
+    """Nothing may push the body sideways: a horizontally scrolling page makes
+    every vertical swipe a fight."""
+    width, viewport = phone.evaluate(
+        '() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]')
+    assert width <= viewport, f'{width}px of content in a {viewport}px viewport'
+    # the results table is the one thing too wide to fit, so it scrolls itself
+    assert phone.evaluate("() => { const w = document.querySelector('.table-wrap');"
+                          ' return w.scrollWidth > w.clientWidth; }')
+
+
+def test_two_fingers_zoom_the_map(phone):
+    before = phone.evaluate('() => __app.view.scale')
+    apart = phone.evaluate(PINCH, [2.0, 8])
+    assert apart > before * 1.3, f'{before} -> {apart}'
+    together = phone.evaluate(PINCH, [0.5, 8])
+    assert together < apart * 0.8, f'{apart} -> {together}'
+
+
+def test_a_phone_starts_with_the_filters_folded(phone):
+    """Fourteen filter fields are a screenful before the map or the table."""
+    assert not phone.is_visible('#f-q')
+    assert phone.is_visible('#map-viewport')
+
+    phone.click('#filters-toggle')
+    phone.wait_for_timeout(120)
+    assert phone.is_visible('#f-q')
+
+
+def test_a_folded_bar_still_says_it_is_filtering(phone):
+    phone.click('#filters-toggle')
+    phone.fill('#f-min', '70')
+    phone.wait_for_timeout(120)
+    phone.click('#filters-toggle')
+    phone.wait_for_timeout(120)
+    assert not phone.is_visible('#f-q')
+    assert 'of' in phone.text_content('#filters-toggle')
+
+
+def test_tap_targets_are_big_enough_to_hit(phone):
+    """iOS zooms the page when a control under 16px takes focus, which throws
+    away the viewport the map is sized against."""
+    phone.click('#filters-toggle')
+    phone.wait_for_timeout(120)
+    fonts = phone.eval_on_selector_all(
+        '.filters input, .filters select',
+        'els => els.map(e => parseFloat(getComputedStyle(e).fontSize))')
+    assert fonts and min(fonts) >= 16, fonts
+    # and a fingertip has to be able to land on a port
+    hit = phone.eval_on_selector('#map-overlay .marker .hit',
+                                 'c => parseFloat(getComputedStyle(c).r)')
+    assert hit >= 20, hit
+
+
 def test_the_console_stayed_clean(app):
     """Last by design: it sees everything the tests above provoked."""
     assert not app.errors, '; '.join(app.errors[:5])
