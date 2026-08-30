@@ -98,6 +98,11 @@ it.
 serves two roots: `web/` for the app, exactly as `make serve` does, and the
 repo root only so the JS unit page can import the modules it tests.
 
+Map tiles are stubbed with a single pixel throughout: a view of the map is 64
+of them, and without `web/tiles` each one 404s and then retries the wiki, which
+was most of the suite's running time. `test_map_tiles_load` is the one test
+that wants the real ones, and it skips until `make tiles` has been run.
+
 ## Known limits
 
 Distances in the *web app* are straight lines between ports; `routing/` has the
