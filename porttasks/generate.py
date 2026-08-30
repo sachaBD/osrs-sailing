@@ -28,10 +28,11 @@ def map_info():
 def costs():
     """The scalars the page needs to turn a distance into a time, from params.tsv.
 
-    Only the sailing and cargo-handling costs: the page prices a single leg,
-    not a route, so nothing about boards, capacity or rerolls is relevant.
-    `stops` is the two port calls a delivery makes - load at the origin,
-    unload at the destination - and both are charged dock plus cargo.
+    The sailing and cargo-handling costs, and what a notice board shows: the
+    page prices a single leg, and values a board by the draw it offers, so
+    nothing about rerolls or the capacity ladder is relevant. `stops` is the
+    two port calls a delivery makes - load at the origin, unload at the
+    destination - and both are charged dock plus cargo.
     """
     p = Params.load()
     return {
@@ -39,7 +40,13 @@ def costs():
         'sailSpeed': p.sail_speed,
         'tDock': p.t_dock,
         'tCargo': p.t_cargo,
+        'tBoard': p.t_board,
         'stops': 2,
+        # courier tasks a board shows at once; params.tsv logged 5 on four
+        # boards of five, and docs/PROBLEM.md argues for 4 once bounty tasks
+        # take their slots. The board values move only a few per cent between
+        # them, but the number is worth settling.
+        'offers': p.courier_per_board,
     }
 
 

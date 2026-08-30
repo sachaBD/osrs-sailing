@@ -66,13 +66,15 @@ written — will decide what to do.
     web/index.html      the page
     web/style.css
     web/js/ports.js     reading the generated port tables
-    web/js/geometry.js  straight-line distance helpers
+    web/js/cost.js      pricing a leg and a route: distance, time, xp/hr
+    web/js/course.js    the charted sea route between two ports
     web/js/dom.js       selectors, HTML escaping, safe localStorage
     web/js/state.js     the view's state, URL and storage serialisation
     web/js/filters.js   state -> the rows on screen
     web/js/multiselect.js  the checkbox dropdown widget
     web/js/table.js     results table and CSV export
-    web/js/trip.js      route builder: sequencing and its panel
+    web/js/trip.js      route builder: sequencing, pricing and its panel
+    web/js/boards.js    what a notice board is worth stopping at
     web/js/map/viewer.js   pan/zoom tile viewer
     web/js/map/overlay.js  markers and routes drawn over the tiles
     web/js/main.js      wiring; the only module that knows all the others

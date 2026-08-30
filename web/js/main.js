@@ -9,6 +9,7 @@ import { filtered, sorted } from './filters.js';
 import { multiSelect, closeMenusOnOutsideClick } from './multiselect.js';
 import { renderTable, exportCsv } from './table.js';
 import { renderTripPanel, toggleTripTask, currentTrip, portsNearRoute } from './trip.js';
+import { boardValues, renderBoardPanel } from './boards.js';
 import { initViewer, fit, zoomAt, restoreViewOrFit, applyTransform, view } from './map/viewer.js';
 import { drawOverlay } from './map/overlay.js';
 
@@ -20,7 +21,10 @@ function render() {
   stateToUrl();
   renderTable(visibleRows);
   renderTripPanel();
-  if (view.ready) drawOverlay(viewer.svg, visibleRows);
+  // valued once, drawn twice: the panel ranks the boards and the map marks them
+  const boards = boardValues(visibleRows);
+  renderBoardPanel(boards);
+  if (view.ready) drawOverlay(viewer.svg, visibleRows, boards);
 }
 
 /** Bind a control to a state key, re-rendering on change. */
@@ -50,6 +54,7 @@ function syncControls() {
   set('#f-xpmin', state.minXp === null ? '' : state.minXp);
   set('#f-xpmax', state.maxXp === null ? '' : state.maxXp);
   set('#trip-corridor', state.corridor);
+  set('#board-slots', state.freeSlots);
   $('#f-unknown').checked = state.hideUnknownXp;
   $('#f-recover').checked = state.recoverAtOrigin;
   $('#f-board-dest').checked = state.boardAtDest;
@@ -79,6 +84,7 @@ function wireFilters() {
   bind('#f-xpmin', 'minXp', numberOr(null));
   bind('#f-xpmax', 'maxXp', numberOr(null));
   bind('#trip-corridor', 'corridor', numberOr(DEFAULTS.corridor));
+  bind('#board-slots', 'freeSlots', numberOr(DEFAULTS.freeSlots));
 
   $$('th[data-key]').forEach((th) => {
     th.addEventListener('click', () => {

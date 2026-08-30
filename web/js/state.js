@@ -22,6 +22,7 @@ export const state = {
   boardAtDest: false,
   showAllRoutes: false,
   corridor: 120,        // "sailing past" radius, in game tiles
+  freeSlots: 1,         // room in the hold, which is what a board stop fills
   mapOpen: false,
   from: new Set(),
   to: new Set(),
@@ -41,7 +42,8 @@ export const update = () => listeners.forEach((fn) => fn());
    the storage format: there is no second schema to keep in step. */
 const URL_STR = { q: '', board: '', direction: '', scope: 'any',
                   sortKey: 'xp', sortDir: 'desc', tripStart: '' };
-const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120 };
+const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120,
+                  freeSlots: 1 };
 const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest', 'showAllRoutes', 'mapOpen'];
 const URL_SET = ['from', 'to', 'calls', 'region', 'ocean'];
 const SEP = '~';   // port names hold spaces, commas and apostrophes; never this
