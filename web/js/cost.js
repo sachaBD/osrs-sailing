@@ -20,7 +20,7 @@ export function legDistance(from, to) {
 }
 
 /** Ticks to sail a leg and work the cargo at both ends of it. */
-export function taskTicks(task) {
+function taskTicks(task) {
   const d = legDistance(task.from, task.to);
   // load at the origin, unload at the destination: two stops, two actions
   return d === null ? null : routeTicks(d, COSTS.stops, COSTS.stops);
@@ -51,6 +51,9 @@ export function routeTicks(tiles, stops, actions) {
 
 export const routeSeconds = (tiles, stops, actions) =>
   routeTicks(tiles, stops, actions) * COSTS.tick;
+
+/** Whole XP, grouped: every number the page shows is one of these. */
+export const round = (n) => Math.round(n).toLocaleString();
 
 /** m:ss, or h:mm:ss once a trip runs past the hour. */
 export function formatDuration(seconds) {

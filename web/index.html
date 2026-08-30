@@ -13,12 +13,12 @@
 </header>
 
 <div class="filters" id="filters">
-  <div class="field"><label for="f-q">Search</label><input id="f-q" type="search" placeholder="port name…"></div>
-  <div class="field"><label for="f-board">Notice board</label><select id="f-board"></select></div>
+  <div class="field"><label for="f-q">Search</label><input id="f-q" data-state="q" type="search" placeholder="port name…"></div>
+  <div class="field"><label for="f-board">Notice board</label><select id="f-board" data-state="board"></select></div>
   <div class="field"><label>Region</label><div class="ms" id="f-region"></div></div>
   <div class="field"><label>Ocean</label><div class="ms" id="f-ocean"></div></div>
   <div class="field"><label for="f-scope">Match on</label>
-    <select id="f-scope">
+    <select id="f-scope" data-state="scope">
       <option value="any">Any leg</option>
       <option value="board">Notice board</option>
       <option value="from">Origin</option>
@@ -29,18 +29,18 @@
   <div class="field"><label>Destination</label><div class="ms" id="f-to"></div></div>
   <div class="field"><label title="Tasks that load or deliver at this port">Calls at</label><div class="ms" id="f-calls"></div></div>
   <div class="field"><label for="f-direction">Direction</label>
-    <select id="f-direction">
+    <select id="f-direction" data-state="direction">
       <option value="">Any direction</option>
       <option value="outbound">Outbound (pick up at board)</option>
       <option value="inbound">Inbound (deliver to board)</option>
     </select></div>
-  <div class="field"><label for="f-min">Min level</label><input id="f-min" type="number" min="1" max="99" placeholder="1"></div>
-  <div class="field"><label for="f-max">Max level</label><input id="f-max" type="number" min="1" max="99" placeholder="99"></div>
-  <div class="field"><label for="f-xpmin">Min XP</label><input id="f-xpmin" type="number" min="0" step="100" placeholder="any"></div>
-  <div class="field"><label for="f-xpmax">Max XP</label><input id="f-xpmax" type="number" min="0" step="100" placeholder="any"></div>
-  <div class="field check"><input id="f-unknown" type="checkbox"><label for="f-unknown">Hide unknown XP</label></div>
-  <div class="field check"><input id="f-recover" type="checkbox"><label for="f-recover" title="Only tasks whose cargo origin has a shipwright">Boat recovery at origin</label></div>
-  <div class="field check"><input id="f-board-dest" type="checkbox"><label for="f-board-dest" title="Only tasks ending at a port with a notice board">Task board at destination</label></div>
+  <div class="field"><label for="f-min">Min level</label><input id="f-min" data-state="minLevel" type="number" min="1" max="99" placeholder="1"></div>
+  <div class="field"><label for="f-max">Max level</label><input id="f-max" data-state="maxLevel" type="number" min="1" max="99" placeholder="99"></div>
+  <div class="field"><label for="f-xpmin">Min XP</label><input id="f-xpmin" data-state="minXp" type="number" min="0" step="100" placeholder="any"></div>
+  <div class="field"><label for="f-xpmax">Max XP</label><input id="f-xpmax" data-state="maxXp" type="number" min="0" step="100" placeholder="any"></div>
+  <div class="field check"><input id="f-unknown" data-state="hideUnknownXp" type="checkbox"><label for="f-unknown">Hide unknown XP</label></div>
+  <div class="field check"><input id="f-recover" data-state="recoverAtOrigin" type="checkbox"><label for="f-recover" title="Only tasks whose cargo origin has a shipwright">Boat recovery at origin</label></div>
+  <div class="field check"><input id="f-board-dest" data-state="boardAtDest" type="checkbox"><label for="f-board-dest" title="Only tasks ending at a port with a notice board">Task board at destination</label></div>
   <button id="map-toggle">Show map</button>
   <button id="reset">Reset</button>
   <button id="export">Export CSV</button>
@@ -61,7 +61,7 @@
   </div>
   <div id="map-legend">
     <span>The line follows the charted sea route between your trip's stops.</span>
-    <label class="inline"><input type="checkbox" id="f-all-routes"> Show every filtered route</label>
+    <label class="inline"><input type="checkbox" id="f-all-routes" data-state="showAllRoutes"> Show every filtered route</label>
     <span class="muted">Map tiles &copy; OSRS Wiki.</span>
   </div>
 </section>
@@ -73,7 +73,7 @@
     <label for="trip-start">Start</label>
     <select id="trip-start"></select>
     <label for="trip-corridor" title="How close a port must pass to count">Passing within</label>
-    <input id="trip-corridor" type="number" min="0" max="600" step="20" value="120">
+    <input id="trip-corridor" data-state="corridor" type="number" min="0" max="600" step="20">
     <button id="trip-clear">Clear trip</button>
   </div>
   <ol id="trip-stops"></ol>
@@ -85,7 +85,7 @@
     <h2>Boards worth a stop</h2>
     <span id="boards-note" class="muted"></span>
     <label for="board-slots" title="How much room the hold has for new work">Free slots</label>
-    <input id="board-slots" type="number" min="1" max="5" step="1" value="1">
+    <input id="board-slots" data-state="freeSlots" type="number" min="1" max="5" step="1">
   </div>
   <table id="boards-table">
     <thead>

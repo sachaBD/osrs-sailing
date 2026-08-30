@@ -40,10 +40,8 @@ export const update = () => listeners.forEach((fn) => fn());
 /* ---- URL and storage ----
    The query string is a complete serialisation of the view, so it doubles as
    the storage format: there is no second schema to keep in step. */
-const URL_STR = { q: '', board: '', direction: '', scope: 'any',
-                  sortKey: 'xp', sortDir: 'desc', tripStart: '' };
-const URL_NUM = { minLevel: 1, maxLevel: 99, minXp: null, maxXp: null, corridor: 120,
-                  freeSlots: 1 };
+const URL_STR = ['q', 'board', 'direction', 'scope', 'sortKey', 'sortDir', 'tripStart'];
+const URL_NUM = ['minLevel', 'maxLevel', 'minXp', 'maxXp', 'corridor', 'freeSlots'];
 const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest', 'showAllRoutes', 'mapOpen'];
 const URL_SET = ['from', 'to', 'calls', 'region', 'ocean'];
 const SEP = '~';   // port names hold spaces, commas and apostrophes; never this
@@ -55,13 +53,16 @@ const PARAM = { mapOpen: 'map', showAllRoutes: 'allRoutes' };
 const param = (key) => PARAM[key] || key;
 const STORE_KEY = 'osrs-port-tasks:filters:v1';
 
-export const DEFAULTS = { ...URL_STR, ...URL_NUM };
+/** A key's default, read off `state` before anything has touched it: written
+    once, where the key itself is declared. */
+export const DEFAULTS = Object.fromEntries(
+  [...URL_STR, ...URL_NUM].map((k) => [k, state[k]]));
 
 export function stateToUrl() {
   const p = new URLSearchParams();
-  for (const [k, d] of Object.entries(URL_STR)) if (state[k] !== d) p.set(param(k), state[k]);
-  for (const [k, d] of Object.entries(URL_NUM)) {
-    if (state[k] !== d && state[k] !== null) p.set(param(k), state[k]);
+  // only what differs from the default, so a shared link carries no noise
+  for (const k of [...URL_STR, ...URL_NUM]) {
+    if (state[k] !== DEFAULTS[k] && state[k] !== null) p.set(param(k), state[k]);
   }
   for (const k of URL_BOOL) if (state[k]) p.set(param(k), '1');
   for (const k of URL_SET) if (state[k].size) p.set(param(k), [...state[k]].join(SEP));
@@ -74,10 +75,9 @@ export function stateToUrl() {
 
 export function urlToState() {
   const p = new URLSearchParams(location.search);
-  for (const k of Object.keys(URL_STR)) if (p.has(param(k))) state[k] = p.get(param(k));
-  for (const k of Object.keys(URL_NUM)) {
-    if (p.has(param(k)) && p.get(param(k)) !== '') state[k] = Number(p.get(param(k)));
-  }
+  for (const k of URL_STR) if (p.has(param(k))) state[k] = p.get(param(k));
+  // an absent param reads null and an empty one '', and neither is a number
+  for (const k of URL_NUM) if (p.get(param(k))) state[k] = Number(p.get(param(k)));
   for (const k of URL_BOOL) state[k] = p.get(param(k)) === '1';
   for (const k of URL_SET) {
     // Mutate rather than reassign: multi-selects close over these Sets, so a

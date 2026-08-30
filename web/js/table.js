@@ -4,9 +4,8 @@ import { state } from './state.js';
 import { DERIVED, sorted } from './filters.js';
 import { canRecoverAt, hasBoardAt } from './ports.js';
 import { xpLift } from './trip.js';
-import { legDistance, taskSeconds, taskXpPerHour, formatDuration, COST_NOTE } from './cost.js';
-
-const COLUMN_COUNT = 14;
+import { legDistance, taskSeconds, taskXpPerHour, formatDuration, round, COST_NOTE }
+  from './cost.js';
 
 /** Cells that can be empty: unknown XP, or a pair the chart never measured. */
 const num = (value, render) => (value === null || value === undefined
@@ -15,8 +14,6 @@ const num = (value, render) => (value === null || value === undefined
 const tick = (on, yes, no) => on
   ? `<span class="yes" title="${esc(yes)}">&#10004;</span>`
   : `<span class="no" title="${esc(no)}">&#10008;</span>`;
-
-const round = (n) => Math.round(n).toLocaleString();
 
 /** What this task does to the trip's XP/hr: the headline number, with the
     arithmetic behind it in the tooltip.
@@ -30,9 +27,9 @@ function liftCell(t) {
   if (lift === null) return '<span class="unknown">&mdash;</span>';
 
   const worth = lift.seconds > 0
-    ? `${lift.xp.toLocaleString()} xp for ${formatDuration(lift.seconds)} of the clock, ` +
+    ? `${round(lift.xp)} xp for ${formatDuration(lift.seconds)} of the clock, ` +
       `a ${round((lift.xp / lift.seconds) * 3600)} xp/hr leg`
-    : `${lift.xp.toLocaleString()} xp, and takes ${formatDuration(-lift.seconds)} off the ` +
+    : `${round(lift.xp)} xp, and takes ${formatDuration(-lift.seconds)} off the ` +
       `clock: fitting it in leads the planner to a better stop order`;
   const why = lift.inTrip
     ? `Already in the trip: dropping it takes the rate from ${round(lift.rate)} to ` +
@@ -60,17 +57,18 @@ function rowHtml(t) {
       <td class="mid">${tick(hasBoardAt(t.to),
         `Notice board at ${t.to}`, `No notice board at ${t.to}`)}</td>
       <td class="num">${t.qty}</td>
-      <td class="num">${num(legDistance(t.from, t.to), (d) => Math.round(d).toLocaleString())}</td>
-      <td class="num">${num(taskSeconds(t), (s) => formatDuration(s))}</td>
-      <td class="num xp">${num(t.xp, (xp) => xp.toLocaleString())}</td>
-      <td class="num rate">${num(taskXpPerHour(t), (r) => Math.round(r).toLocaleString())}</td>
+      <td class="num">${num(legDistance(t.from, t.to), round)}</td>
+      <td class="num">${num(taskSeconds(t), formatDuration)}</td>
+      <td class="num xp">${num(t.xp, round)}</td>
+      <td class="num rate">${num(taskXpPerHour(t), round)}</td>
       <td class="num">${liftCell(t)}</td>
     </tr>`;
 }
 
 export function renderTable(rows) {
   $('#tbody').innerHTML = rows.map(rowHtml).join('')
-    || `<tr><td colspan="${COLUMN_COUNT}" class="empty">No tasks match these filters.</td></tr>`;
+    || `<tr><td colspan="${$('thead tr').children.length}" class="empty">` +
+       'No tasks match these filters.</td></tr>';
 
   const known = rows.filter((r) => r.xp !== null);
   const totalXp = known.reduce((sum, r) => sum + r.xp, 0);
@@ -80,11 +78,11 @@ export function renderTable(rows) {
 
   $('#stats').innerHTML = `
     <span><b>${rows.length}</b> task${rows.length === 1 ? '' : 's'}</span>
-    <span>total XP <b>${totalXp.toLocaleString()}</b></span>
-    <span>avg XP <b>${known.length ? Math.round(totalXp / known.length).toLocaleString() : '&mdash;'}</b></span>
-    <span>best <b>${best === null ? '&mdash;' : best.toLocaleString()}</b></span>
+    <span>total XP <b>${round(totalXp)}</b></span>
+    <span>avg XP <b>${known.length ? round(totalXp / known.length) : '&mdash;'}</b></span>
+    <span>best <b>${best === null ? '&mdash;' : round(best)}</b></span>
     <span title="${esc(COST_NOTE)}">best XP/hr <b>${
-      bestRate === null ? '&mdash;' : Math.round(bestRate).toLocaleString()}</b></span>`;
+      bestRate === null ? '&mdash;' : round(bestRate)}</b></span>`;
 
   document.querySelectorAll('th[data-key]').forEach((th) => {
     th.classList.toggle('sorted', th.dataset.key === state.sortKey);

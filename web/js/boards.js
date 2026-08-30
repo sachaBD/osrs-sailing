@@ -30,7 +30,7 @@ import { $, esc } from './dom.js';
 import { TASKS, hasBoardAt } from './ports.js';
 import { COSTS } from './generated.js';
 import { xpLift, currentTrip } from './trip.js';
-import { legDistance, formatDuration, routeSeconds } from './cost.js';
+import { legDistance, formatDuration, routeSeconds, round } from './cost.js';
 import { state } from './state.js';
 
 /** Every task a board can offer, whether or not it is on screen. */
@@ -85,7 +85,7 @@ export function bestOfDraw(values, offers, slots) {
     at what those seconds would otherwise have earned. A task that cannot beat
     that is worth nothing rather than something negative: you would simply not
     accept it, and declining is free. */
-export function offerValue(task, rate, usable) {
+function offerValue(task, rate, usable) {
   if (!usable.has(task.id)) return 0;
   const lift = xpLift(task);
   if (lift === null || lift.inTrip) return 0;
@@ -138,8 +138,6 @@ function reachFrom(stops, port) {
 
 /* ---- the panel ---- */
 
-const xp = (n) => Math.round(n).toLocaleString();
-
 /** One row per board, best stop first. Boards that offer nothing usable are
     counted rather than listed: the interesting fact about them is that there
     are so many. */
@@ -151,7 +149,7 @@ export function renderBoardPanel(boards) {
   const live = boards.filter((b) => b.value > 0);
   const rate = currentTrip().rate;
   $('#boards-note').textContent = live.length
-    ? `Priced against your trip's ${xp(rate)} xp/hr: what an average draw is ` +
+    ? `Priced against your trip's ${round(rate)} xp/hr: what an average draw is ` +
       'worth over and above sailing on.'
     : 'Nothing on any board beats sailing on at this rate.';
 
@@ -163,9 +161,9 @@ export function renderBoardPanel(boards) {
       <td class="num board-value" title="${esc(
         `An average draw of ${b.offers} offers from ${b.port}'s ${b.pool} tasks, ` +
         `keeping the best ${state.freeSlots}. ${b.live} of the ${b.pool} would be ` +
-        `worth taking, so ${b.pool - b.live} are dead draws.`)}">${xp(b.value)}</td>
+        `worth taking, so ${b.pool - b.live} are dead draws.`)}">${round(b.value)}</td>
       <td class="num">${b.live}<span class="muted">/${b.pool}</span></td>
-      <td class="num">${xp(b.best)}</td>
+      <td class="num">${round(b.best)}</td>
     </tr>`).join('');
 
   const dead = boards.length - live.length;
