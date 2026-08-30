@@ -112,9 +112,77 @@ export function portsNearRoute(stops, corridor) {
   return near;
 }
 
+/** Sequence a set of tasks and price the result: sailing, clock, and rate.
+
+    One place, so the trip panel and the "what would this add" column cannot
+    drift apart. Tasks with unknown XP count as zero, which makes the rate a
+    floor rather than a guess. */
+export function priceTrip(tasks, startPort) {
+  const { stops, distance } = sequenceTrip(tasks, startPort);
+  const xp = tasks.reduce((sum, t) => sum + (t.xp || 0), 0);
+  // every task is loaded once and unloaded once, wherever the stops fall
+  const seconds = routeSeconds(distance, stops.length, tasks.length * 2);
+  const rate = seconds ? (xp / seconds) * 3600 : 0;
+  return { tasks, stops, distance, xp, seconds, rate };
+}
+
 export function currentTrip() {
+  return priceTrip(tripTasks(), state.tripStart || null);
+}
+
+/* ---- what one more task would do to the trip ----
+
+   Re-sequences the whole trip with the candidate added and re-prices it. A
+   task lying on water you were sailing anyway costs two cargo handlings and
+   little else, so its XP lands nearly free and the trip's rate climbs; one
+   that drags you off course pulls the rate down however good it looks alone.
+
+   It is the lift under the greedy order the planner actually picks, not the
+   best insertion the tour allows: we are ranking additions, not solving the
+   travelling salesman. */
+
+/** One cache per trip: the table asks for every visible row on each render,
+    and the sort comparator asks again for every comparison. */
+let lifts = { key: null, priced: null, values: new Map() };
+
+// task ids are numbers, so a comma cannot be mistaken for part of one
+const tripKey = () => `${state.trip.join(',')}|${state.tripStart}`;
+
+/** How adding this task moves the trip's XP/hr, or null when there is no
+    trip to move or the task's XP is unknown.
+
+    A task already in the trip reports the same question read backwards: what
+    the trip would lose without it. */
+export function xpLift(task) {
+  const key = tripKey();
+  if (lifts.key !== key) lifts = { key, priced: null, values: new Map() };
+  if (!lifts.values.has(task.id)) lifts.values.set(task.id, measureLift(task));
+  return lifts.values.get(task.id);
+}
+
+function measureLift(task) {
   const tasks = tripTasks();
-  return { tasks, ...sequenceTrip(tasks, state.tripStart || null) };
+  // no trip to lift; the XP/hr column already answers the standalone case
+  if (!tasks.length || task.xp === null) return null;
+
+  const start = state.tripStart || null;
+  const inTrip = tasks.some((t) => t.id === task.id);
+  // the trip as it stands is one side of the comparison for every candidate
+  const now = (lifts.priced ??= priceTrip(tasks, start));
+  const before = inTrip ? priceTrip(tasks.filter((t) => t.id !== task.id), start) : now;
+  const after = inTrip ? now : priceTrip([...tasks, task], start);
+
+  return {
+    inTrip,
+    delta: after.rate - before.rate,
+    base: before.rate,
+    rate: after.rate,
+    xp: task.xp,
+    // usually positive - two cargo handlings at least - but not always: the
+    // stop order is greedy, and inserting a task sometimes leads the planner
+    // to a better one, so the longer trip can be the quicker one
+    seconds: after.seconds - before.seconds,
+  };
 }
 
 export function toggleTripTask(id) {
@@ -150,16 +218,11 @@ function passingHtml(stops) {
 }
 
 export function renderTripPanel() {
-  const { tasks, stops, distance: travelled } = currentTrip();
+  const { tasks, stops, distance: travelled, xp, seconds, rate } = currentTrip();
   $('#trip-panel').toggleAttribute('hidden', tasks.length === 0);
   if (!tasks.length) return;
 
-  const xp = tasks.reduce((sum, t) => sum + (t.xp || 0), 0);
   const unknown = tasks.filter((t) => t.xp === null).length;
-
-  // every task is loaded once and unloaded once, wherever the stops fall
-  const seconds = routeSeconds(travelled, stops.length, tasks.length * 2);
-  const rate = seconds ? (xp / seconds) * 3600 : 0;
 
   $('#trip-summary').innerHTML =
     `<span><b>${tasks.length}</b> task${tasks.length === 1 ? '' : 's'}</span>` +

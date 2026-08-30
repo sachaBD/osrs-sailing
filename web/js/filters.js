@@ -2,6 +2,7 @@
 import { state } from './state.js';
 import { TASKS, legsOf, regionOf, oceansOf, canRecoverAt, hasBoardAt } from './ports.js';
 import { legDistance, taskSeconds, taskXpPerHour } from './cost.js';
+import { xpLift } from './trip.js';
 
 /** Columns computed from the port tables rather than stored on the task.
     Region is no longer a column, but it stays here for the CSV export. */
@@ -13,6 +14,8 @@ export const DERIVED = {
   distance: (t) => legDistance(t.from, t.to),
   seconds: (t) => taskSeconds(t),
   xpPerHour: (t) => taskXpPerHour(t),
+  // how the trip's rate moves if this task joins it; null without a trip
+  lift: (t) => xpLift(t)?.delta ?? null,
 };
 
 /** Does this task touch the selected group, under the current scope?

@@ -209,6 +209,42 @@ def test_every_passing_port_is_clickable(trip):
     assert trip.locator('#trip-passing button.pass[data-port]').count() == chips
 
 
+def _lifts(page) -> list[float | None]:
+    """The Delta XP/hr column, as numbers; None for the em dash."""
+    cells = page.eval_on_selector_all(
+        '#tbody tr td:last-child', 'cs => cs.map(c => c.textContent.trim())')
+    return [None if c == '\u2014'
+            else float(c.replace(',', '').replace('\u2212', '-').lstrip('+'))
+            for c in cells]
+
+
+def test_the_lift_column_needs_a_trip(fresh):
+    """With no trip there is nothing to lift, and XP/hr already answers the
+    standalone case."""
+    assert set(_lifts(fresh)) == {None}
+
+
+def test_the_lift_ranks_what_to_add_to_the_trip(trip):
+    trip.click('th[data-key="lift"]')          # sorts descending by default
+    trip.wait_for_timeout(200)
+    values = _lifts(trip)
+    known = [v for v in values if v is not None]
+
+    assert len(known) > len(values) / 2, 'almost every task should price'
+    assert known == sorted(known, reverse=True)
+    assert values[:len(known)] == known, 'unpriced tasks must sink to the bottom'
+    assert known[0] > 0, 'some task must be worth adding'
+    assert any(v < 0 for v in known), 'and some must not be'
+
+
+def test_the_lift_moves_when_the_trip_does(trip):
+    """It is a lift against this trip, not a property of the task."""
+    before = _lifts(trip)
+    trip.locator('#tbody .trip-btn').nth(8).click()   # one more task in the trip
+    trip.wait_for_timeout(200)
+    assert _lifts(trip) != before
+
+
 def test_clearing_the_trip_closes_the_panel(trip):
     trip.click('#trip-clear')
     trip.wait_for_timeout(100)
