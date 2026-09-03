@@ -104,7 +104,6 @@ export function boardValues(rows) {
   // XP per second: what a second of sailing is already earning, which is the
   // rate every offer has to beat before it is worth the time it costs
   const rate = trip.rate / 3600;
-  const stops = trip.stops.map((s) => s.port);
   const usable = new Set(rows.map((t) => t.id));
   const out = [];
 
@@ -121,19 +120,38 @@ export function boardValues(rows) {
       value: bestOfDraw(values, COSTS.offers, state.freeSlots),
       best: Math.max(0, ...values),
       // context only: the value above already prices the sailing, but a rank
-      // with no sense of where these places are is hard to read
-      reach: reachFrom(stops, port),
+      // with no sense of what these stops cost is hard to read
+      detour: detourFrom(trip.route, port),
     });
   }
   return out.sort((a, b) => b.value - a.value);
 }
 
-/** Sailing seconds from the nearest stop the trip already makes, one way. */
-function reachFrom(stops, port) {
-  const tiles = stops
-    .map((s) => legDistance(s, port))
-    .filter((d) => d !== null);
-  return tiles.length ? routeSeconds(Math.min(...tiles), 0, 0) : null;
+/** The sailing this stop would add to the trip, in seconds, or null when the
+    port is uncharted from everywhere the trip goes.
+
+    The extra water, not the distance to the nearest stop: those are different
+    questions and only the first one is the one being asked. A port sitting
+    halfway down a leg you already sail is hours from either end of it and
+    costs you nothing to touch, which is exactly the case the old measure got
+    wrong. So: the cheapest way to work the port into the route - slipped into
+    any leg, or tacked on after the last stop, which is the whole sail out
+    because the trip does not come back. */
+export function detourFrom(route, port) {
+  let best = Infinity;
+  for (let i = 1; i < route.length; i++) {
+    const out = legDistance(route[i - 1], port);
+    const back = legDistance(port, route[i]);
+    const direct = legDistance(route[i - 1], route[i]);
+    if (out === null || back === null || direct === null) continue;
+    best = Math.min(best, out + back - direct);
+  }
+  // carrying on to it and stopping there: no leg to rejoin, so no way back
+  const onward = route.length ? legDistance(route[route.length - 1], port) : null;
+  if (onward !== null) best = Math.min(best, onward);
+  // the charted legs are measured, not derived, so a triangle can come out
+  // very slightly the wrong way round; a detour is never less than nothing
+  return best === Infinity ? null : routeSeconds(Math.max(0, best), 0, 0);
 }
 
 /* ---- the panel ---- */
@@ -156,8 +174,8 @@ export function renderBoardPanel(boards) {
   $('#boards-rows').innerHTML = live.map((b) => `
     <tr>
       <td>${esc(b.port)}</td>
-      <td class="num muted">${b.reach === null ? '&mdash;'
-        : b.reach === 0 ? 'on the trip' : formatDuration(b.reach)}</td>
+      <td class="num muted">${b.detour === null ? '&mdash;'
+        : b.detour === 0 ? 'on the trip' : formatDuration(b.detour)}</td>
       <td class="num board-value" title="${esc(
         `An average draw of ${b.offers} offers from ${b.port}'s ${b.pool} tasks, ` +
         `keeping the best ${state.freeSlots}. ${b.live} of the ${b.pool} would be ` +
