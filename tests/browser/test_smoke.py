@@ -275,6 +275,29 @@ def test_boards_rank_by_what_a_stop_is_worth(trip):
     assert all(_value(r[4]) >= _value(r[2]) for r in rows)
 
 
+def _seconds(cell: str) -> float:
+    minutes, seconds = cell.split(':')
+    return int(minutes) * 60 + int(seconds)
+
+
+def test_the_detour_column_prices_working_a_board_in(trip):
+    """The extra sailing a board would cost this trip, not how far it sits
+    from the nearest stop: a board the trip already calls at is free, and one
+    it sails past is nearly so however far along the leg it lies."""
+    stops = trip.eval_on_selector_all('#trip-stops li .port', 'ns => ns.map(n => n.textContent)')
+    detours = {r[0]: r[1] for r in _boards(trip)}
+    called = [p for p in detours if p in stops]
+    assert called, 'this trip calls at no board at all'
+    assert all(detours[p] == 'on the trip' for p in called)
+
+    trip.fill('#trip-corridor', '200')      # boards the course really passes
+    passed = [p for p in detours if p in set(_passing_ports(trip))]
+    assert passed, 'the trip sails past no board, so there is nothing to check'
+    elsewhere = [_seconds(v) for p, v in detours.items() if p not in passed and p not in stops]
+    for port in passed:
+        assert _seconds(detours[port]) < max(elsewhere), port
+
+
 def test_more_room_in_the_hold_never_lowers_a_board(trip):
     one = {r[0]: _value(r[2]) for r in _boards(trip)}
     trip.fill('#board-slots', '3')

@@ -35,11 +35,12 @@ export const tripTasks = () => state.trip.map((id) => TASK_BY_ID.get(id)).filter
 /** Nearest-neighbour over the pending pickups and the cargo currently held.
     Returns stops with consecutive visits to one port merged together. */
 export function sequenceTrip(tasks, startPort) {
-  if (!tasks.length) return { stops: [], distance: 0 };
+  if (!tasks.length) return { stops: [], distance: 0, route: [] };
 
   const waiting = new Set(tasks.map((t) => t.id));
   const held = new Set();
-  let current = startPort || tasks[0].from;
+  const start = startPort || tasks[0].from;
+  let current = start;
   const visits = [];
   let travelled = 0;
 
@@ -75,7 +76,13 @@ export function sequenceTrip(tasks, startPort) {
       });
     }
   }
-  return { stops, distance: travelled };
+
+  /* The water the ship actually covers: where it starts, then every stop in
+     turn. Not the same list as `stops` - the trip can be started from a port
+     it has nothing to do at, and that opening leg is sailed all the same. */
+  const route = [start, ...stops.map((s) => s.port)]
+    .filter((port, i, all) => i === 0 || port !== all[i - 1]);
+  return { stops, distance: travelled, route };
 }
 
 /** Ports the route sails past without stopping -> Map(name -> {dist, leg}). */
@@ -115,12 +122,12 @@ export function portsNearRoute(stops, corridor) {
     drift apart. Tasks with unknown XP count as zero, which makes the rate a
     floor rather than a guess. */
 export function priceTrip(tasks, startPort) {
-  const { stops, distance } = sequenceTrip(tasks, startPort);
+  const { stops, distance, route } = sequenceTrip(tasks, startPort);
   const xp = tasks.reduce((sum, t) => sum + (t.xp || 0), 0);
   // every task is loaded once and unloaded once, wherever the stops fall
   const seconds = routeSeconds(distance, stops.length, tasks.length * 2);
   const rate = seconds ? (xp / seconds) * 3600 : 0;
-  return { tasks, stops, distance, xp, seconds, rate };
+  return { tasks, stops, route, distance, xp, seconds, rate };
 }
 
 export function currentTrip() {

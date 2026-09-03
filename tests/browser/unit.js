@@ -10,6 +10,7 @@ import { filtered, sorted, matchesScope } from '../../web/js/filters.js';
 import {
   sequenceTrip, portsNearRoute, distanceToSegment, priceTrip, xpLift,
 } from '../../web/js/trip.js';
+import { legDistance, routeSeconds } from '../../web/js/cost.js';
 
 const results = [];
 const check = (name, cond, detail = '') => results.push({ name, ok: !!cond, detail });
@@ -131,6 +132,12 @@ check('an empty trip has no stops', sequenceTrip([], null).stops.length === 0);
 check('a named start port is honoured',
   sequenceTrip(sample, 'Lunar Isle').stops.length > 0);
 check('distance is non-negative', trip.distance >= 0);
+check('the route begins where the trip begins and holds every stop', (() => {
+  const named = sequenceTrip(sample, 'Lunar Isle');
+  return named.route[0] === 'Lunar Isle'
+    && named.stops.every((s) => named.route.includes(s.port))
+    && named.route.every((p, i) => i === 0 || p !== named.route[i - 1]);
+})());
 
 /* ---- what one more task would do to the trip ---- */
 const tripIds = [TASKS[0].id, TASKS[5].id, TASKS[12].id, TASKS[30].id];
@@ -189,7 +196,7 @@ check('the lift follows the trip it is measured against', (() => {
 })());
 
 /* ---- what a board is worth stopping at ---- */
-import { bestOfDraw, boardValues, POOLS } from '../../web/js/boards.js';
+import { bestOfDraw, boardValues, detourFrom, POOLS } from '../../web/js/boards.js';
 
 check('a flat pool is worth its one value however it is drawn',
   near(bestOfDraw([5, 5, 5, 5, 5, 5, 5, 5], 3, 1), 5, 1e-9));
@@ -247,6 +254,37 @@ check('board values are sorted, best stop first',
     const vs = boardValues(TASKS).map((b) => b.value);
     return vs.every((v, i) => i === 0 || vs[i - 1] >= v);
   }));
+
+/* The bug this replaced: a port halfway down a leg you already sail is a long
+   way from either end of it, and the old measure - distance to the nearest
+   stop - read that as a long trip out. Corsair Cove sits on the water between
+   Catherby and Port Roberts; touching it costs about a tile. */
+check('a port on the way is barely a detour', (() => {
+  const onWay = detourFrom(['Catherby', 'Port Roberts'], 'Corsair Cove');
+  const nearest = routeSeconds(Math.min(legDistance('Catherby', 'Corsair Cove'),
+    legDistance('Corsair Cove', 'Port Roberts')), 0, 0);
+  return onWay < 10 && nearest > 120;
+})(), 'the case in the bug report');
+check('a stop the trip already makes is no detour at all',
+  detourFrom(['Catherby', 'Corsair Cove', 'Port Roberts'], 'Corsair Cove') === 0);
+check('a port off the course costs sailing out and back', (() => {
+  const off = detourFrom(['Catherby', 'Port Roberts'], 'Lunar Isle');
+  return off > detourFrom(['Catherby', 'Port Roberts'], 'Corsair Cove');
+})());
+check('the detour is never negative, and never more than sailing out and back',
+  allPorts.every((p) => {
+    const route = ['Catherby', 'Port Sarim', 'Port Roberts'];
+    const d = detourFrom(route, p);
+    if (d === null) return true;
+    const nearest = Math.min(...route.map((s) => legDistance(s, p) ?? Infinity));
+    return d >= 0 && d <= routeSeconds(2 * nearest, 0, 0) + 1e-9;
+  }));
+check('an uncharted port has no detour to report',
+  detourFrom(['Catherby', 'Port Roberts'], 'Atlantis') === null);
+check('a route with nowhere to go reports nothing', detourFrom([], 'Catherby') === null);
+check('every board is reported against the trip it is priced against',
+  withState({ trip: tripIds, freeSlots: 1 },
+    () => boardValues(TASKS).every((b) => b.detour === null || b.detour >= 0)));
 
 /* ---- ports near the route ---- */
 check('stops are never listed as passed', (() => {
