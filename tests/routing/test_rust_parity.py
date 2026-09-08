@@ -34,7 +34,7 @@ from porttasks.routing.problem.export import write
 from porttasks.routing.problem.instance import Instance
 from porttasks.routing.problem.sim import Action, Sim, State
 
-LEVEL = 60
+LEVEL = 67
 SEEDS = (0, 1, 2, 3, 4)
 STEPS = 5_000
 

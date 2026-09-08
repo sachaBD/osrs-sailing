@@ -69,7 +69,7 @@ def write(level: int) -> Path:
 
 
 def main(argv: list[str]) -> None:
-    for level in [int(a) for a in argv] or [30, 58, 99]:
+    for level in [int(a) for a in argv] or [30, 60, 67, 99]:
         out = write(level)
         print(f'{out.relative_to(DERIVED.parent)}  {out.stat().st_size / 1024:.0f}K  '
               f'{Instance.at_level(level).describe()}')

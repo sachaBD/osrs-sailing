@@ -15,7 +15,10 @@
 //! crate owns the dynamics it runs millions of times and the policies over
 //! them.
 
+pub mod evaluate;
 pub mod instance;
+pub mod policy;
+pub mod route;
 pub mod sim;
 pub mod trace;
 
