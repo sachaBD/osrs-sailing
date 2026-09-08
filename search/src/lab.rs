@@ -45,6 +45,18 @@ pub struct Rollout {
     /// clock, not for the same number of steps - actions have durations, and
     /// comparing a 5-tick take against a 700-tick sail over equal step counts
     /// would be comparing different amounts of time.
+    ///
+    /// The reroll sets the scale. Boards redraw every ~1,980 ticks, so beyond
+    /// that the sampled offers are a fresh uniform draw carrying no information
+    /// about the real one, and looking further buys nothing: measured, the
+    /// horizon pays up to about 2,700 ticks and is flat after it. Slightly past
+    /// one reroll rather than exactly one, because *accepted tasks survive a
+    /// reroll* - the offers stop mattering at the boundary but the consequences
+    /// of having taken one do not.
+    ///
+    /// Too short is far worse than too long. At 900 ticks rollout is 12,700
+    /// xp/hr *below* the baseline: it cannot see far enough to know that a
+    /// long haul pays off, so it refuses everything that does not pay at once.
     horizon: i64,
     /// Score every candidate on this many futures first, keep the best half,
     /// and only they pay for the rest.
@@ -53,7 +65,7 @@ pub struct Rollout {
 
 impl Rollout {
     pub fn new(inst: &Instance) -> Rollout {
-        Rollout::with(inst, 8, 1_800, 4)
+        Rollout::with(inst, 8, 2_700, 4)
     }
 
     pub fn with(inst: &Instance, futures: usize, horizon: i64, heat: usize) -> Rollout {

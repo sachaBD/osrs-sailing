@@ -34,6 +34,7 @@ fn main() {
         Some("walk") => walk(rest),
         Some("tally") => tally(rest),
         Some("lab") => lab(rest),
+        Some("sweep") => sweep(rest),
         Some("trace") => emit_trace(rest),
         Some(other) => fail(&format!("unknown command: {other}")),
     }
@@ -165,6 +166,7 @@ fn tally(args: &[String]) {
     // ticks spent holding n tasks, and how each acquisition phase ended
     let mut occupancy = [0i64; 5];
     let (mut ended_full, mut ended_short) = (0u64, 0u64);
+    let mut rerolls = 0u64;
 
     for seed in 0..seeds {
         let sim = Sim::new(&instance);
@@ -181,6 +183,7 @@ fn tally(args: &[String]) {
             let held = instance.capacity - state.free_slots(instance.capacity);
             let step = sim.step(&state, action);
             occupancy[held] += step.ticks;
+            rerolls += (step.state.epoch - state.epoch) as u64;
             // a Sail with a free slot means acquisition gave up before filling
             if let Action::Sail(_) = action {
                 if state.port_boat != state.port_player {
@@ -195,6 +198,11 @@ fn tally(args: &[String]) {
     }
 
     let clock: i64 = occupancy.iter().sum();
+    println!(
+        "\nreroll every {:.0} ticks on average ({} rerolls over {seeds} seeds)",
+        clock as f64 / rerolls.max(1) as f64,
+        rerolls
+    );
     println!("\nhold occupancy, by share of the clock:");
     for (n, ticks) in occupancy.iter().enumerate().take(instance.capacity + 1) {
         println!("  {n} held  {:5.1}%", 100.0 * *ticks as f64 / clock as f64);
@@ -281,6 +289,48 @@ fn lab(args: &[String]) {
             "  {name:22} {:>9.0}  +/-{:>6.0}     {against:>18}  {:>6.0} ms",
             score.mean,
             score.error,
+            each * 1000.0
+        );
+    }
+}
+
+/// Rollout against horizon, at fixed futures. The question is whether looking
+/// past a reroll is worth anything: every board is redrawn at one, so the
+/// offers beyond it are noise - but *accepted tasks survive*, so the
+/// consequences of a take do cross the boundary.
+fn sweep(args: &[String]) {
+    let level = args.first().map(num).unwrap_or(DEFAULT_LEVEL as u64) as u32;
+    let seeds = args.get(1).map(num).unwrap_or(60);
+    let futures = args.get(2).map(num).unwrap_or(8) as usize;
+    let instance = load(level);
+
+    println!("{}", instance.describe());
+    println!("{seeds} seeds, {futures} futures\n");
+    println!(
+        "  {:12} {:>9}  {:>8}     {:>18}  cost",
+        "horizon", "xp/hr", "+/-", "vs baseline"
+    );
+
+    let base = evaluate::rates(&instance, Baseline::new, seeds, HORIZON, 0);
+    let score = evaluate::Score::summarise(&base);
+    println!(
+        "  {:12} {:>9.0}  +/-{:>6.0}     {:>18}  {:>6} ms",
+        "baseline", score.mean, score.error, "-", 1
+    );
+
+    for horizon in [900i64, 1_800, 2_700, 3_600, 5_400, 7_200, 10_800] {
+        let clock = Instant::now();
+        let make = |i: &Instance| lab::Rollout::with(i, futures, horizon, futures / 2);
+        let rates = evaluate::rates(&instance, make, seeds, HORIZON, 0);
+        let each = clock.elapsed().as_secs_f64() / seeds as f64;
+        let score = evaluate::Score::summarise(&rates);
+        let d = evaluate::paired(&rates, &base);
+        println!(
+            "  {horizon:<12} {:>9.0}  +/-{:>6.0}     {:+9.0} +/- {:5.0}  {:>6.0} ms",
+            score.mean,
+            score.error,
+            d.mean,
+            d.error,
             each * 1000.0
         );
     }

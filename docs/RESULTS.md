@@ -292,9 +292,35 @@ ones `RESULTS.md` recorded the last time this project built a rollout:
 - **Twenty candidates that could not matter** - chartering to boards already
   read this epoch, which tells you nothing you do not know.
 
-Both futures and horizon are still monotone at 16 and 3,600, so the knee has
-not been found; the sweep stopped because 11.5 s an episode was already 10,000x
-the baseline's cost, not because more stopped helping.
+### The horizon saturates at the reroll, as predicted
+
+Swept at 8 futures, 60 seeds, against a measured reroll period of **1,981
+ticks**:
+
+| horizon | vs baseline, paired | |
+| --- | --- | --- |
+| 900 | **-12,712 +/- 2,594** | worse than not searching at all |
+| 1,800 | +5,722 +/- 2,105 | |
+| **2,700** | **+10,711 +/- 1,961** | the knee, about 1.4 rerolls |
+| 3,600 | +9,472 +/- 2,059 | flat |
+| 5,400 | +9,952 +/- 2,062 | flat |
+
+The prediction was the user's and it is right: every board redraws at a reroll,
+so sampled offers beyond one are a fresh uniform draw carrying no information
+about the real one, and looking further buys nothing. It saturates slightly
+*past* one reroll rather than exactly at it, which is what accepted tasks
+surviving a reroll predicts - the offers stop mattering at the boundary but the
+consequences of having taken one do not.
+
+Too short is much worse than too long: at 900 ticks rollout is 12,700 xp/hr
+**below the baseline**, because it cannot see far enough to know a long haul
+pays off and refuses everything that does not pay at once. This is the same
+myopia the Layer 2 planner had, and it is why the fixed-delivery-count horizon
+there was the wrong shape.
+
+Note this corrects the row above. Reading "16 x 3,600 beats 8 x 1,800" as *the
+horizon* not having saturated was wrong - the futures were doing that work.
+More sampled futures still helps; more horizon, past 2,700, does not.
 
 Read the uplift as a **bound on what the hand-written rule leaves on the
 table** - about 16% - rather than as a policy anyone would run. It needs a

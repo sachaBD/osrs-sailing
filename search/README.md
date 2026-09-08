@@ -16,6 +16,8 @@ constants we have not measured yet.
     cargo run --release -- run 67 300     the baseline, 300 seeds
     cargo run --release -- walk 67 0      one episode, action by action
     cargo run --release -- tally 67 300   which tasks it actually accepts
+    cargo run --release -- lab 67 100     every variant, paired against the baseline
+    cargo run --release -- sweep 67 60 8  rollout against its horizon
     cargo run --release -- describe 67    what came across the seam
 
 ## The seam
@@ -42,8 +44,19 @@ command line over it, so everything is reachable from a test.
     src/sim.rs        the dynamics, over `Copy` states
     src/route.rs      sequencing a held set into a route, and pricing it
     src/policy.rs     the rules baseline, and the `Policy` trait
-    src/evaluate.rs   xp/hr over independent seeds, in parallel
+    src/lab.rs        experiments on the baseline. Never the baseline itself
+    src/evaluate.rs   xp/hr over independent seeds, and paired differences
     src/trace.rs      a recording of random play, for Python to check
+
+`policy.rs` is the committed rule and `lab.rs` is everything trying to beat it.
+The split is the point: a variant that wins gets promoted by changing
+`Tuning::default`, and one that loses stays here with its result written down,
+because a negative result nobody recorded gets re-run by the next person.
+
+Rollout is the one that wins - 16% over the baseline, and the direction with
+room left in it. Two ideas straight out of the textbook lose: the
+rho-parametrisation the docs prescribe, and exact rather than heuristic
+routing. `docs/RESULTS.md` says why.
 
 `walk` and `tally` are diagnostics rather than decoration. Every bug this
 policy has had was invisible in the mean and obvious in a transcript: two

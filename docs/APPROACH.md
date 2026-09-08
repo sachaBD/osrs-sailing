@@ -116,14 +116,47 @@ Maximising a *ratio* is not the same as maximising a sum. For a candidate rate
 `rho`, have the planner maximise `sum(xp_i - rho * dt_i)`. The `rho` at which
 the achievable optimum is exactly zero is the optimal xp/hr.
 
-In practice this bootstraps: start `rho` at the best rate any policy has
-achieved so far, re-plan, measure the new achieved rate, update `rho`, repeat.
-It converges quickly and every iteration produces a usable policy.
+**Tried, and it loses.** Measured against the rules baseline it is 5,000 xp/hr
+worse (`RESULTS.md`). The rule is right for choosing a *cycle* and wrong for a
+greedy sequential acceptance: the first task taken bears the whole trip's
+travel, so almost nothing clears `rho` on its own and the policy stands still.
+What the baseline does instead - judge a candidate against *the trip's own
+rate* - is a state-dependent `rho`, and tracks opportunity cost better than any
+constant can.
+
+So `rho` is not the outer loop for a greedy acceptance rule. It may still be
+the right handle for a policy that chooses whole cycles, which is what the
+maximum-ratio-cycle idea below would do.
 
 Note that for *comparing* two policies you do not need `rho` at all - simulate
-both for a long time and compare xp/hr directly. `rho` is needed inside the
-planner, to trade XP against time consistently within a single decision.
+both for a long time and compare xp/hr directly, paired on the same seeds.
 
+
+## Layer 4b - rollout, which is where the gains actually are
+
+One step of policy iteration over the rules baseline: try each candidate move,
+let the baseline finish the job, play whichever led somewhere best. **+16% and
+the first policy here to cross 100k xp/hr** (`RESULTS.md`).
+
+It is the path worth pushing, for three reasons. It needs no bound to get
+wrong, unlike the branch and bound this project already deleted. It inherits
+its tail value from the base policy rather than inventing one, which is the
+gap Layer 2 kept falling into. And it improves automatically whenever the base
+does, so work on the baseline and work on the search compound instead of
+competing.
+
+What it costs is eleven seconds an episode against the baseline's one
+millisecond, so read it as a *bound on what the hand-written rule leaves on the
+table* until that comes down. Open questions, in order:
+
+1. **Where does the horizon stop paying?** Boards reroll every ~1,980 ticks and
+   the draw beyond that is noise - but accepted tasks survive a reroll, so the
+   consequences of a take do cross the boundary. Neither futures nor horizon
+   had saturated at 16 and 3,600.
+2. **Rollout never deviates on where to sail** - only on what to accept and
+   which board to read. The route order is still the base's nearest neighbour.
+3. **Make it cheap.** Racing candidates on a few futures before paying for the
+   rest already helps; the next lever is not re-drawing worlds it does not need.
 
 ## Layer 5 - learning, last
 
@@ -144,7 +177,11 @@ measurement, not in advance.
 - **Guessed constants.** `sail_speed`, `t_dock`, `t_board` and friends are
   eyeball figures. Run every conclusion across a plausible range of them and
   report only what survives. If policy *ranking* is stable, the finding stands
-  even though the absolute xp/hr does not.
+  even though the absolute xp/hr does not. An episode now costs a millisecond,
+  so this sweep is finally affordable and has still not been done.
+- **Measure paired.** Same seeds for every policy, interval on the difference.
+  Seed variance here is large and shared, and the unpaired eight-seed result
+  this file once led with did not reproduce.
 - **Hindsight bias.** Layer 3A will under-scout. Do not read its behaviour as
   evidence that scouting is not worth it - that is the one thing it cannot
   tell you.

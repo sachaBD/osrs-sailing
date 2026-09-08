@@ -11,7 +11,7 @@ whose cost is measured in states per second.
 | --- | --- | --- |
 | `world/` | the ground truth: what the game and the map *are* | **done** |
 | `problem/` | the search space over it: the SMDP | **done**, on guessed constants |
-| `../../search/` | policies over that problem | Rust; see its README |
+| `../../search/` | policies over that problem | Rust; a baseline and a rollout over it |
 
 The line between the first two is the one that matters: `world/` holds what
 nobody disputes - a port's coordinates, a task's XP, the 2,181 tiles round

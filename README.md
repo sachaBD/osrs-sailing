@@ -74,8 +74,13 @@ rather than eight.
     make search       run the rules baseline
     make search-check its tests, clippy and rustfmt
 
-The baseline does about 88,000 xp/hr at level 67 against a floor of 15,000;
-`docs/RESULTS.md` has the numbers and the three bugs found on the way.
+Two policies live there. The **rules baseline** is a player's own method
+written down - about 88,000 xp/hr at level 67 against a floor of 15,000, in a
+millisecond an episode. **Rollout** over it does 101,000, which is 16% more for
+ten thousand times the compute, and is the direction with room left in it.
+
+`docs/RESULTS.md` has every number, paired on the same seeds, along with the
+two principled ideas that turned out to lose.
 
 Python owns every table and every number derived from one. The crate reads
 `derived/instance_l{level}.json` and never parses a table itself, so there is
