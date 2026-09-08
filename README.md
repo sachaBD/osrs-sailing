@@ -66,11 +66,16 @@ in `search/`, which is Rust.
 
 `search/` is one crate, with its own README. It holds the policies and nothing
 else: the layer that runs a few hundred million states is the one layer worth
-compiling, and everything upstream of it stays Python.
+compiling, and everything upstream of it stays Python. An episode - three and a
+half simulated hours - costs about a millisecond, so a measurement is 300 seeds
+rather than eight.
 
     make instance     export the problem into derived/, for the crate to read
-    make search       build and run it
+    make search       run the rules baseline
     make search-check its tests, clippy and rustfmt
+
+The baseline does about 88,000 xp/hr at level 67 against a floor of 15,000;
+`docs/RESULTS.md` has the numbers and the three bugs found on the way.
 
 Python owns every table and every number derived from one. The crate reads
 `derived/instance_l{level}.json` and never parses a table itself, so there is

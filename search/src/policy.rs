@@ -19,22 +19,31 @@
 //! Two measures on purpose, and the first one is not the second one with an
 //! empty hold. Step 1 ranks a task standalone, by its delivery leg alone, which
 //! is what makes the inbound tasks - board at the destination - come out on top:
-//! at level 60 the ten best tasks by that measure are all inbound. Price the
-//! same tasks by the round trip from their board and only four of the ten are.
-//! The first pick is deliberately made on the optimistic measure.
+//! at level 67 the ten best tasks by that measure are all inbound, where by the
+//! round trip from their board only three of the ten are. The first pick is
+//! deliberately made on the optimistic measure.
+//!
+//! **A score has to price what the policy actually does.** Step 4 charters out
+//! to the longest run's origin and recalls the boat there, so the outbound leg
+//! is never sailed - and while the ranking still charged for it, a 106-tick
+//! shuttle priced at 49,189 xp/hr and was then run at 98,377. Pricing each
+//! candidate set from where its own boat would meet it was worth 18%, and it is
+//! what lets step 3 refuse work: correctly priced, the rule sails on two of its
+//! four slots rather than four.
 //!
 //! Three constraints come from the map rather than from the rule, and all three
-//! are `tables/transport.tsv`:
+//! live in `tables/transport.tsv`:
 //!
-//! - **A board with no charter cannot be scouted.** At level 60 that is
-//!   Ardougne, Ruins of Unkah and Void Knights' Outpost. Their tasks are still
-//!   delivered *to*; they are just never somewhere we go to look.
-//! - **A recall needs a shipwright.** Scouting can end at The Summer Shore,
-//!   which has a board and no shipwright, so the route cannot start there: we
-//!   charter on to the nearest shipwright and recall from there.
-//! - **Never charter away with cargo aboard.** Rejoining the boat means
-//!   recalling it, and a recall destroys the cargo. Taking work is always safe;
-//!   walking away from the boat is not.
+//! - **A board we cannot reach without the boat cannot be scouted.** At level
+//!   67 that is Ardougne, Ruins of Unkah and Void Knights' Outpost - everywhere
+//!   else is a charter ship or a teleport. Their tasks are still delivered
+//!   *to*; they are just never somewhere we go to look.
+//! - **A recall needs a shipwright.** Scouting can end at Etceteria, Port Tyras
+//!   or The Summer Shore, which have boards and no shipwright, so a route
+//!   cannot start there: we charter on to a port that has one and recall.
+//! - **Never leave the boat with cargo aboard.** Rejoining it means recalling
+//!   it, and a recall destroys the cargo. Taking work is always safe; walking
+//!   away from the boat is not.
 
 use crate::instance::{Instance, NONE};
 use crate::route::{self, Leg};
@@ -217,8 +226,10 @@ impl Baseline {
     }
 
     /// What accepting `task` would do to the XP/hr of the whole held set.
-    /// With an empty hold this is the standalone rate, which is the measure
-    /// step 1 wants anyway once the route starts at the task's own origin.
+    ///
+    /// Both sides are re-sequenced and re-priced, and each from its own
+    /// rendezvous: adding a task can change where the boat should meet us, and
+    /// pricing the two sets from one port would hide that.
     fn delta(&self, inst: &Instance, state: &State, held: &[Leg], task: i32) -> f64 {
         let mut with = [Leg {
             origin: 0,

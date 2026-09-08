@@ -10,8 +10,13 @@ million times, across seeds, sampled futures, and every plausible value of the
 constants we have not measured yet.
 
     make instance       export the problem into derived/  (Python)
-    make search         build and run                     (Rust)
+    make search         run the baseline                  (Rust)
     make search-check   tests, clippy, rustfmt
+
+    cargo run --release -- run 67 300     the baseline, 300 seeds
+    cargo run --release -- walk 67 0      one episode, action by action
+    cargo run --release -- tally 67 300   which tasks it actually accepts
+    cargo run --release -- describe 67    what came across the seam
 
 ## The seam
 
@@ -32,6 +37,18 @@ end refuses a file it does not recognise rather than guessing.
 
 One crate, no workspace. `lib.rs` is the whole surface; `main.rs` is a thin
 command line over it, so everything is reachable from a test.
+
+    src/instance.rs   the static problem, read across the seam
+    src/sim.rs        the dynamics, over `Copy` states
+    src/route.rs      sequencing a held set into a route, and pricing it
+    src/policy.rs     the rules baseline, and the `Policy` trait
+    src/evaluate.rs   xp/hr over independent seeds, in parallel
+    src/trace.rs      a recording of random play, for Python to check
+
+`walk` and `tally` are diagnostics rather than decoration. Every bug this
+policy has had was invisible in the mean and obvious in a transcript: two
+oscillations that cost a third of the rate, and a score that priced a leg the
+policy never sailed. Read the episode before believing the number.
 
 ## Two implementations of the dynamics
 

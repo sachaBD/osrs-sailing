@@ -48,6 +48,11 @@ catch simulator bugs that a clever planner would hide.
 - greedy by XP
 - greedy by xp per tick to complete
 - scout the nearest boards, then greedy
+- **the rules baseline** - a player's own method, written down and run: rank
+  the work, charter out to look at it, stop when nothing more would improve the
+  trip, then recall the boat to the far pickup and sail home laden. Built in
+  `search/`, and at 88,000 xp/hr it is a far higher floor than any of the
+  above. See `RESULTS.md`.
 
 `INSTANCE.md` predicts the honest floor at roughly 6,600-7,000 xp/hr - the rate
 of doing tasks one at a time. Anything that cannot beat that is not batching,
