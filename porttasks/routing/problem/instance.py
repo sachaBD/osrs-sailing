@@ -34,7 +34,7 @@ class Instance:
 
     # ports
     sail: np.ndarray        # (P, P) int32, ticks, diagonal 0
-    charter: np.ndarray     # (P,)   int32, ticks, NONE where no charter ship
+    travel: np.ndarray      # (P,)   int32, ticks to reach without the boat, NONE where we cannot
     recall: np.ndarray      # (P,)   int32, ticks, NONE where no shipwright
     has_board: np.ndarray   # (P,)   bool
 
@@ -74,7 +74,7 @@ class Instance:
         world = world or Catalogue.load()
         matrix = matrix or Distances.load()
         params = params or Params.load()
-        charter = params_mod.charter_ports()
+        travel = params_mod.player_travel()
 
         names = tuple(sorted(n for n, p in world.ports.items() if p.dock_level <= level))
         index = {name: i for i, name in enumerate(names)}
@@ -89,7 +89,7 @@ class Instance:
                     sail[i, j] = (round(matrix.between(a, b) / params.sail_speed)
                                   + params.t_dock + params.t_cargo)
 
-        charter_ticks = np.full(size, NONE, np.int32)
+        travel_ticks = np.full(size, NONE, np.int32)
         recall_ticks = np.full(size, NONE, np.int32)
         has_board = np.zeros(size, bool)
         for name, i in index.items():
@@ -97,8 +97,8 @@ class Instance:
             has_board[i] = port.notice_board
             if port.shipwright:
                 recall_ticks[i] = params.t_recall
-            if name in charter:
-                charter_ticks[i] = params.t_charter
+            if name in travel:
+                travel_ticks[i] = travel[name]
 
         # A board offers from its whole pool regardless of level, so tasks that
         # cannot be done still occupy an offer slot. Keeping them is the point:
@@ -124,7 +124,7 @@ class Instance:
 
         return cls(
             level=level, params=params,
-            sail=sail, charter=charter_ticks, recall=recall_ticks, has_board=has_board,
+            sail=sail, travel=travel_ticks, recall=recall_ticks, has_board=has_board,
             task_board=board, task_origin=origin, task_dest=dest, task_xp=xp,
             task_eligible=eligible, pool_ptr=pool_ptr, pool=pool,
             port_names=names,

@@ -44,7 +44,6 @@ class Params:
     t_cargo: int
     t_board: int
     t_drop: int
-    t_charter: int
     t_recall: int
     capacity: tuple[tuple[int, int], ...]  # (level, tasks), ascending
 
@@ -77,11 +76,17 @@ class Params:
             reroll_completions=int(raw['reroll_completions']),
             t_dock=ticks('t_dock'), t_cargo=ticks('t_cargo'),
             t_board=ticks('t_board'), t_drop=ticks('t_drop'),
-            t_charter=ticks('t_charter'), t_recall=ticks('t_recall'),
+            t_recall=ticks('t_recall'),
             capacity=ladder)
 
 
-def charter_ports(path: Path | str = TRANSPORT) -> set[str]:
-    """Ports a charter ship serves, so the player can reach them without the boat."""
-    fields = ['port', 'charter', 'charter_req', 'teleport']
-    return {r['port'] for r in _rows(path, fields) if r['charter'] == 'y'}
+def player_travel(path: Path | str = TRANSPORT) -> dict[str, int]:
+    """Ports the player can reach without the boat -> what getting there costs.
+
+    Charter ship or magic teleport, it is the same action to the model: the
+    player moves and the boat does not. What separates them is only the price,
+    and `transport.tsv` holds both in one column so there is one place to
+    correct when somebody finally times them.
+    """
+    fields = ['port', 'charter', 'charter_req', 'teleport', 'walk_ticks', 'ticks']
+    return {r['port']: int(r['ticks']) for r in _rows(path, fields) if r['ticks'].isdigit()}

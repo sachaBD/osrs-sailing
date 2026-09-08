@@ -20,7 +20,7 @@ import numpy as np
 from ...paths import DERIVED
 from .instance import Instance
 
-FORMAT = 1  # bump when a field changes shape; Rust checks it and refuses a mismatch
+FORMAT = 2  # bump when a field changes shape; Rust checks it and refuses a mismatch
 
 
 def path_for(level: int) -> Path:
@@ -42,7 +42,7 @@ def as_dict(instance: Instance) -> dict:
         'ports': {
             'names': list(instance.port_names),
             'sail': [[int(v) for v in row] for row in instance.sail],
-            'charter': [int(v) for v in instance.charter],
+            'travel': [int(v) for v in instance.travel],
             'recall': [int(v) for v in instance.recall],
             'has_board': [bool(v) for v in instance.has_board],
         },

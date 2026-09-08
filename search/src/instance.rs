@@ -20,7 +20,7 @@ pub const NONE: i32 = -1;
 
 /// The format `export.py` writes. A mismatch means the two halves were built
 /// from different revisions, which is worth refusing rather than guessing at.
-const FORMAT: u32 = 1;
+const FORMAT: u32 = 2;
 
 #[derive(Debug, Deserialize)]
 pub struct Params {
@@ -34,7 +34,8 @@ pub struct Params {
 struct Ports {
     names: Vec<String>,
     sail: Vec<Vec<i32>>,
-    charter: Vec<i32>,
+    /// Ticks to reach without the boat - charter ship or magic teleport alike.
+    travel: Vec<i32>,
     recall: Vec<i32>,
     has_board: Vec<bool>,
 }
@@ -79,7 +80,7 @@ pub struct Instance {
 
     pub n_ports: usize,
     sail: Vec<i32>, // n_ports * n_ports, row-major
-    pub charter: Vec<i32>,
+    pub travel: Vec<i32>,
     pub recall: Vec<i32>,
     pub has_board: Vec<bool>,
 
@@ -169,7 +170,7 @@ impl From<Wire> for Instance {
             params: w.params,
             n_ports,
             sail: w.ports.sail.into_iter().flatten().collect(),
-            charter: w.ports.charter,
+            travel: w.ports.travel,
             recall: w.ports.recall,
             has_board: w.ports.has_board,
             n_tasks: w.tasks.names.len(),

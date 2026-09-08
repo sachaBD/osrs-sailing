@@ -158,3 +158,68 @@ sampled futures is what buys the improvement, and the knee is at 12.
 Candidates are then raced - every move scored on the first 6 futures, the best
 6 kept, only those paying for the rest - which holds the score (31,748 vs
 31,648 unraced) at 70% of the cost.
+
+
+## The rules baseline, in Rust (2026-09-08)
+
+The search was deleted and rebuilt in Rust behind a JSON seam: Python exports
+an `Instance`, the crate reads it, and a differential test replays five
+thousand steps of random legal play through `sim.py` to prove the two
+simulators agree. An episode now costs about a millisecond, so 300 seeds is
+routine and every number below has an interval worth reading.
+
+The policy is a player's rule, stated as one. Rank the work, charter out to
+look at the best of it, take it if it is there, stop when nothing more would
+improve the trip - then charter to the far end of the longest run, recall the
+boat to *that* pickup, and sail home laden.
+
+Level 67, 300 seeds of 3.3 hours:
+
+| | xp/hr | |
+| --- | --- | --- |
+| baseline | **87,874 +/- 701** | |
+| ...before pricing agreed with execution | 74,242 +/- 713 | |
+| ...before the teleports were modelled | 72,132 +/- 643 | |
+| one task at a time | ~15,000 | the floor |
+| best hold-filling bundle | 147,566 | Etceteria -> Rellekka, if it could always be filled |
+
+### Three bugs, and two of them were the same bug
+
+Twice the policy oscillated: a score that depended on **where the player was
+standing**, so two ports each looked better from the other and it chartered
+between them until the horizon. First the route was priced from the player
+rather than the boat, which cost a third of the rate. Then the rendezvous fell
+back to `nearest_shipwright`, which skips the port you are on - so Port
+Khazard's nearest was Brimhaven and Brimhaven's was Port Khazard, and one seed
+spent 92% of its clock on the loop. It widened the interval elevenfold and was
+invisible in the mean.
+
+Neither ever crashed, so the regression test watches the clock rather than the
+score: no episode may spend more than a quarter of its ticks off the boat.
+
+### The score has to price what the policy actually does
+
+The third was worth 18% on its own. The rendezvous rule charters out to the
+longest run's origin and recalls the boat there, so the outbound leg is never
+sailed - but the *score* was still charging for it, from wherever the boat
+happened to sit. A 106-tick shuttle priced at 49,189 xp/hr when the policy
+went on to run it at 98,377.
+
+Pricing each candidate set from where its own boat would meet it took the
+baseline from 74,242 to 87,874, and changed the shape of play more than the
+rate: the mean hold fell from 2.78 slots to 1.99, legs sailed full from 34% to
+11%, and the tasks it will touch at all from 208 to 141. Correctly priced, the
+rule refuses far more work than it accepts.
+
+### What the hold occupancy says
+
+The stopping rule is "no task has a positive delta", and it does the work it
+was supposed to: on a state holding one leg of the Etceteria-Rellekka shuttle,
+**3 of 337 eligible tasks price positive** - the three co-directional ones,
+each adding zero extra ticks. Everything else is negative, a long-haul task at
+-9,749 xp/hr for +1,663 ticks among them. The hold sits at 2 of 4 slots
+because the corridor has only three companions in the pool and a board shows
+five of about twenty, so they are rarely all on offer at once.
+
+So the gap to the 147k bundle ceiling is not the rule failing to refuse
+filler. It is that the good corridor cannot often be filled.

@@ -244,7 +244,7 @@ class Sim:
         if state.port_boat == here:
             out += [Action(SAIL, p) for p in range(inst.n_ports) if p != here]
 
-        out += [Action(CHARTER, int(p)) for p in np.flatnonzero(inst.charter != NONE) if p != here]
+        out += [Action(CHARTER, int(p)) for p in np.flatnonzero(inst.travel != NONE) if p != here]
 
         if inst.recall[here] != NONE and state.port_boat != here:
             out.append(Action(RECALL))
@@ -278,7 +278,7 @@ class Sim:
             cost = int(inst.sail[state.port_player, arg])
         elif kind == CHARTER:
             moved = replace(state, port_player=arg)  # the boat stays behind
-            cost = int(inst.charter[arg])
+            cost = int(inst.travel[arg])
         else:
             moved = replace(state, port_boat=state.port_player,
                             loaded=_frozen(np.zeros_like(state.loaded)))

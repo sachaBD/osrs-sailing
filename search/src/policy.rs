@@ -61,7 +61,7 @@ impl Baseline {
     pub fn new(inst: &Instance) -> Baseline {
         Baseline {
             scoutable: (0..inst.n_ports)
-                .map(|p| inst.has_board[p] && inst.charter[p] != NONE)
+                .map(|p| inst.has_board[p] && inst.travel[p] != NONE)
                 .collect(),
             shipwrights: (0..inst.n_ports)
                 .filter(|&p| inst.recall[p] != NONE)
@@ -142,22 +142,6 @@ impl Baseline {
         self.score(sim.inst, state, &legs(sim.inst, state), task)
     }
 
-    /// The port a route is priced from: where the boat is.
-    ///
-    /// It has to be the boat and not the player, and that is not a detail.
-    /// Chartering moves the player but leaves the boat, so a score measured
-    /// from the player changes with every hop - and a ranking that changes as
-    /// you walk oscillates. The first version of this priced from the player
-    /// and spent whole episodes chartering between two boards, each of which
-    /// looked best from the other.
-    ///
-    /// The boat does not move while you scout, so from the boat the ranking is
-    /// stable, every charter is followed by a take or by a board struck off
-    /// the list, and the loop is finite by construction.
-    fn start(&self, _inst: &Instance, state: &State) -> usize {
-        state.port_boat
-    }
-
     /// Where to have the boat meet us: the origin of the longest run we hold.
     ///
     /// A recall is a teleport - it costs ten ticks wherever the boat is - so
@@ -175,9 +159,7 @@ impl Baseline {
         runs.sort_by_key(|l| std::cmp::Reverse(inst.sail(l.origin, l.dest)));
         runs.iter()
             .map(|l| l.origin)
-            .find(|&p| {
-                inst.recall[p] != NONE && (p == state.port_player || inst.charter[p] != NONE)
-            })
+            .find(|&p| inst.recall[p] != NONE && (p == state.port_player || inst.travel[p] != NONE))
             .unwrap_or_else(|| self.recall_port(inst, state.port_player))
     }
 
@@ -206,11 +188,38 @@ impl Baseline {
             .expect("every instance has a shipwright to recall at")
     }
 
+    /// Where a *candidate* set is priced from.
+    ///
+    /// Never from where the player is standing. Chartering moves the player and
+    /// leaves the boat, so a score measured from the player changes with every
+    /// hop, and a ranking that changes as you walk oscillates - this policy has
+    /// had that bug twice.
+    ///
+    /// With a dry hold we are free to rendezvous, and the rendezvous rule will
+    /// put the boat at the longest run's origin - so the outbound leg from
+    /// wherever the boat happens to sit now is never sailed, and charging for
+    /// it prices a leg the policy does not sail. Score and execution have to
+    /// agree or the ranking is answering a different question.
+    fn priced_from(&self, inst: &Instance, state: &State, legs: &[Leg]) -> usize {
+        let dry = !state.loaded[..inst.capacity].iter().any(|&l| l);
+        if !dry || legs.is_empty() {
+            return state.port_boat;
+        }
+        let mut runs: Vec<&Leg> = legs.iter().filter(|l| !l.loaded).collect();
+        runs.sort_by_key(|l| std::cmp::Reverse(inst.sail(l.origin, l.dest)));
+        runs.iter()
+            .map(|l| l.origin)
+            // strictly no reference to where the player is standing: this is a
+            // score, and a score that moves as you walk is the oscillation this
+            // policy has already had twice
+            .find(|&p| inst.recall[p] != NONE && inst.travel[p] != NONE)
+            .unwrap_or(state.port_boat)
+    }
+
     /// What accepting `task` would do to the XP/hr of the whole held set.
     /// With an empty hold this is the standalone rate, which is the measure
     /// step 1 wants anyway once the route starts at the task's own origin.
     fn delta(&self, inst: &Instance, state: &State, held: &[Leg], task: i32) -> f64 {
-        let start = self.start(inst, state);
         let mut with = [Leg {
             origin: 0,
             dest: 0,
@@ -219,8 +228,10 @@ impl Baseline {
         }; crate::sim::MAX_HELD];
         with[..held.len()].copy_from_slice(held);
         with[held.len()] = leg(inst, task, false);
-        let after = route::rate(inst, start, &with[..held.len() + 1]);
-        after - route::rate(inst, start, held)
+        let with = &with[..held.len() + 1];
+        // each set priced from where its own boat would meet it
+        let after = route::rate(inst, self.priced_from(inst, state, with), with);
+        after - route::rate(inst, self.priced_from(inst, state, held), held)
     }
 
     /// Step 1's measure: XP per hour of the delivery leg alone, ignoring how
@@ -298,7 +309,7 @@ impl Baseline {
             .expect("more than one port exists");
         if state.port_boat == here {
             Action::Sail(target)
-        } else if inst.charter[target] != NONE {
+        } else if inst.travel[target] != NONE {
             Action::Charter(target)
         } else {
             Action::Charter(self.nearest_shipwright(inst, here))

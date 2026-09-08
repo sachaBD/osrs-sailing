@@ -19,5 +19,4 @@ t_dock	10	ticks	guess	docking and undocking per port
 t_cargo	33	ticks	game	loading and unloading, ~20s per port stop
 t_board	5	ticks	guess	reading a board and accepting one task
 t_drop	3	ticks	guess	cancelling a task (port master or captain's log)
-t_charter	10	ticks	guess	wiki says "only a few seconds"
 t_recall	10	ticks	guess	recovering the boat at a shipwright

@@ -307,7 +307,7 @@ impl<'a> Sim<'a> {
         }
         out.extend(
             (0..inst.n_ports)
-                .filter(|&p| p != here && inst.charter[p] != NONE)
+                .filter(|&p| p != here && inst.travel[p] != NONE)
                 .map(Action::Charter),
         );
         if inst.recall[here] != NONE && state.port_boat != here {
@@ -355,7 +355,7 @@ impl<'a> Sim<'a> {
             }
             Action::Charter(to) => {
                 moved.port_player = to; // the boat stays behind
-                inst.charter[to] as i64
+                inst.travel[to] as i64
             }
             Action::Recall => {
                 moved.port_boat = moved.port_player;

@@ -1,7 +1,8 @@
 //! The search, from the command line.
 //!
 //!     cargo run --release -- run 60          the baseline, 30 seeds
-//!     cargo run --release -- walk 60 0 3000  one episode, action by action
+//!     cargo run --release -- walk 67 0 3000  one episode, action by action
+//!     cargo run --release -- tally 67 300      which tasks it actually accepts
 //!     cargo run --release -- describe 60
 //!     cargo run --release -- trace 60 7 400 > out/trace.json
 //!
@@ -30,6 +31,7 @@ fn main() {
         None | Some("run") => run(rest),
         Some("describe") => describe(rest),
         Some("walk") => walk(rest),
+        Some("tally") => tally(rest),
         Some("trace") => emit_trace(rest),
         Some(other) => fail(&format!("unknown command: {other}")),
     }
@@ -141,6 +143,99 @@ fn walk(args: &[String]) {
         println!(
             "  {label:12} {ticks:>6} ticks  {:>5.1}%",
             100.0 * ticks as f64 / state.ticks as f64
+        );
+    }
+}
+
+/// Which tasks the baseline actually takes, over many episodes.
+///
+/// The policy is a ranking, so what it ends up holding is the ranking's
+/// verdict on the task table - and a task the rule never touches is either
+/// genuinely bad or evidence the rule cannot see it.
+fn tally(args: &[String]) {
+    let level = args.first().map(num).unwrap_or(DEFAULT_LEVEL as u64) as u32;
+    let seeds = args.get(1).map(num).unwrap_or(SEEDS);
+    let instance = load(level);
+    let mut taken = vec![0u64; instance.n_tasks];
+    // how full the hold was when this task was accepted: 0 = it anchored the set
+    let mut at_hold = vec![[0u64; 5]; instance.n_tasks];
+    let mut total = 0u64;
+    // ticks spent holding n tasks, and how each acquisition phase ended
+    let mut occupancy = [0i64; 5];
+    let (mut ended_full, mut ended_short) = (0u64, 0u64);
+
+    for seed in 0..seeds {
+        let sim = Sim::new(&instance);
+        let mut policy = Baseline::new(&instance);
+        let mut state = sim.reset(seed, 0);
+        while state.ticks < HORIZON {
+            let action = policy.act(&sim, &state);
+            if let Action::Take { task, .. } = action {
+                let held = instance.capacity - state.free_slots(instance.capacity);
+                taken[task as usize] += 1;
+                at_hold[task as usize][held] += 1;
+                total += 1;
+            }
+            let held = instance.capacity - state.free_slots(instance.capacity);
+            let step = sim.step(&state, action);
+            occupancy[held] += step.ticks;
+            // a Sail with a free slot means acquisition gave up before filling
+            if let Action::Sail(_) = action {
+                if state.port_boat != state.port_player {
+                } else if held == instance.capacity {
+                    ended_full += 1;
+                } else {
+                    ended_short += 1;
+                }
+            }
+            state = step.state;
+        }
+    }
+
+    let clock: i64 = occupancy.iter().sum();
+    println!("\nhold occupancy, by share of the clock:");
+    for (n, ticks) in occupancy.iter().enumerate().take(instance.capacity + 1) {
+        println!("  {n} held  {:5.1}%", 100.0 * *ticks as f64 / clock as f64);
+    }
+    let mean: f64 = occupancy
+        .iter()
+        .enumerate()
+        .map(|(n, t)| n as f64 * *t as f64)
+        .sum::<f64>()
+        / clock as f64;
+    println!(
+        "  mean {mean:.2} of {} slots;  legs sailed with a full hold: {:.0}%\n",
+        instance.capacity,
+        100.0 * ended_full as f64 / (ended_full + ended_short) as f64
+    );
+
+    let mut rows: Vec<usize> = (0..instance.n_tasks).filter(|&t| taken[t] > 0).collect();
+    rows.sort_by_key(|&t| std::cmp::Reverse(taken[t]));
+    let eligible = (0..instance.n_tasks)
+        .filter(|&t| instance.task_eligible[t])
+        .count();
+
+    println!("{}", instance.describe());
+    println!(
+        "{seeds} seeds, {:.1}h each: {total} tasks accepted, {} distinct of {eligible} eligible\n",
+        HORIZON as f64 * TICK / 3600.0,
+        rows.len()
+    );
+    println!("   %      n   xp     leg  xp/hr  1st%   task");
+    for t in rows {
+        let leg = instance.sail(
+            instance.task_origin[t] as usize,
+            instance.task_dest[t] as usize,
+        );
+        println!(
+            "  {:5.2} {:6} {:6} {:5} {:7.0} {:5.0}   {}",
+            100.0 * taken[t] as f64 / total as f64,
+            taken[t],
+            instance.task_xp[t],
+            leg,
+            instance.task_xp[t] as f64 / leg as f64 * 3600.0 / TICK,
+            100.0 * at_hold[t][0] as f64 / taken[t] as f64,
+            instance.task_names[t]
         );
     }
 }

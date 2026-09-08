@@ -14,10 +14,12 @@
 #                  game and several are a short walk from the dock rather than
 #                  on it.  Correct them.
 #   walk_ticks     ticks from where the teleport lands to the gangplank.
-#   ticks          total player-travel time.  ALL PLACEHOLDERS - nobody has
-#                  timed any of this.  Charter is written as 10 ticks (6s) on
-#                  the wiki's "a few seconds"; treat every number as a guess
-#                  until measured.
+#   ticks          total player-travel time, and the one home for it: a port
+#                  with a number here can be reached without the boat, and this
+#                  is what it costs.  A `?` means we have no way there.
+#                  Charter is 10 ticks (6s), from the wiki's "a few seconds".
+#                  A magic teleport is quicker and is written as 5 ticks (3s).
+#                  Both are estimates; only the ordering is confident.
 #
 # All 30 ports are listed.  Charter availability is from the wiki's list of
 # 21 charter destinations; the ones it does not serve need a teleport or a
@@ -33,7 +35,7 @@ Civitas illa Fortis	y	enter Varlamore	charter only	0	10	charter from wiki
 Corsair Cove	y		charter only	0	10	charter from wiki
 Deepfin Point	y	67 Sailing	charter only	0	10	charter from wiki
 Entrana	n		via Port Sarim monks	?	?	teleport unverified
-Etceteria	n		Miscellania ring / Fremennik teleport	?	?	teleport unverified
+Etceteria	n		Miscellania ring / Fremennik teleport	0	5	player has this teleport
 Hosidius	n		Xeric's talisman / Book of the Dead	?	?	teleport unverified
 Jatizso	n		Fremennik lyre + boat	?	?	teleport unverified
 Land's End	y	enter Great Kourend	charter only	0	10	charter from wiki
@@ -48,7 +50,7 @@ Port Sarim	y		charter only	0	10	charter from wiki
 Port Tyras	y	Regicide	charter only	0	10	charter from wiki
 Prifddinas	y	Song of the Elves	charter only	0	10	charter from wiki
 Red Rock	y	partial The Red Reef	charter only	0	10	charter from wiki
-Rellekka	n		Fremennik lyre	?	?	teleport unverified
+Rellekka	n		Fremennik lyre	0	5	player has this teleport
 Ruins of Unkah	n		Desert amulet / carpet	?	?	teleport unverified
 Sunset Coast	y	enter Varlamore	charter only	0	10	charter from wiki
 The Pandemonium	y	Pandemonium quest	charter only	0	10	charter from wiki
