@@ -16,5 +16,8 @@
 //! them.
 
 pub mod instance;
+pub mod sim;
+pub mod trace;
 
 pub use instance::{Instance, NONE};
+pub use sim::{Action, Sim, State, Step};
