@@ -18,3 +18,5 @@ web/js/generated.js
 # sea chart needs only that one file.
 derived/port_tasks.json
 derived/port_tasks.csv
+# the problem exported for the Rust search; `make instance` rebuilds it in a blink
+derived/instance_l*.json

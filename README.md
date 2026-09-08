@@ -18,6 +18,7 @@ Hosted at <https://sachabd.github.io/osrs-sailing/>, rebuilt from `main` by
     tables/         hand-edited. The source of truth.
     derived/        computed from tables/. Never edit.
     porttasks/      the Python package: pipeline, tiles, wiki, routing
+    search/         the Rust crate: policies over the routing problem
     web/            what the browser is served, and nothing else
     tests/          pytest; `browser`-marked tests drive a real Chromium
     tools/          one-off scripts that are not part of the package
@@ -57,9 +58,23 @@ run with `--apply`.
 
 `porttasks/` holds the data pipeline (tables in, `web/js/generated.js` out),
 the wiki refresh, the tile grid, and `routing/`. It has its own README, and so
-does `routing/`; the short version is that `world/` is the ground truth,
-`problem/` is the search space over it, and `search/` — still to be
-written — will decide what to do.
+does `routing/`; the short version is that `world/` is the ground truth and
+`problem/` is the search space over it. What to *do* in that space is decided
+in `search/`, which is Rust.
+
+## The Rust search
+
+`search/` is one crate, with its own README. It holds the policies and nothing
+else: the layer that runs a few hundred million states is the one layer worth
+compiling, and everything upstream of it stays Python.
+
+    make instance     export the problem into derived/, for the crate to read
+    make search       build and run it
+    make search-check its tests, clippy and rustfmt
+
+Python owns every table and every number derived from one. The crate reads
+`derived/instance_l{level}.json` and never parses a table itself, so there is
+one definition of what a port costs and no second place for it to drift.
 
 ## The web app
 

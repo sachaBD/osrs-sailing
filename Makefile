@@ -1,8 +1,10 @@
 PORT ?= 8000
 PY ?= python3
+CARGO ?= $(HOME)/.cargo/bin/cargo
 
 .PHONY: help install data tiles check test lint shot serve stop refresh refresh-apply \
-        survey survey-check survey-render sim clean clean-tiles clean-out
+        survey survey-check survey-render sim instance search search-check \
+        clean clean-tiles clean-out
 
 help: ## Show this help
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t-/' | column -t -s "$$(printf '\t')"
@@ -19,6 +21,17 @@ tiles: ## Download map tiles into web/tiles (~11MB, needed once for offline use)
 
 check: ## Fast tests: everything that does not need a browser
 	$(PY) -m pytest -m 'not browser'
+
+instance: ## Export the problem into derived/, for the Rust search to read
+	$(PY) -m porttasks.routing.problem.export
+
+search: instance ## Build and run the Rust search
+	$(CARGO) run --release --manifest-path search/Cargo.toml --
+
+search-check: instance ## The Rust suite: tests, lints and formatting
+	$(CARGO) test --release --manifest-path search/Cargo.toml
+	$(CARGO) clippy --manifest-path search/Cargo.toml --all-targets -- -D warnings
+	$(CARGO) fmt --manifest-path search/Cargo.toml --check
 
 test: ## Every test, including the browser runs
 	$(PY) -m pytest
@@ -59,6 +72,8 @@ sim: ## Walk the simulator one action at a time, in marimo
 
 clean: ## Remove generated files (keeps downloaded tiles and out/)
 	rm -f web/js/generated.js derived/port_tasks.json derived/port_tasks.csv
+	rm -f derived/instance_l*.json
+	-$(CARGO) clean --manifest-path search/Cargo.toml
 
 clean-out: ## Remove the generated output: survey caches, renders, screenshots
 	rm -rf out

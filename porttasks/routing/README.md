@@ -3,13 +3,15 @@
 The port tasks as a routing problem: a simulator of the notice boards, and
 (next) policies that decide which tasks to run and in what order.
 
-Three layers, in order, and they are kept apart on purpose.
+Three layers, in order, and they are kept apart on purpose. Two of them are
+here; the third is a Rust crate at the repo root, because it is the only one
+whose cost is measured in states per second.
 
 | | what it is | state |
 | --- | --- | --- |
 | `world/` | the ground truth: what the game and the map *are* | **done** |
 | `problem/` | the search space over it: the SMDP | **done**, on guessed constants |
-| `search/` | policies over that problem | **not written yet** |
+| `../../search/` | policies over that problem | Rust; see its README |
 
 The line between the first two is the one that matters: `world/` holds what
 nobody disputes - a port's coordinates, a task's XP, the 2,181 tiles round
