@@ -83,3 +83,102 @@ pub fn next_stop(inst: &Instance, start: usize, legs: &[Leg]) -> Option<usize> {
         .map(|leg| if leg.loaded { leg.dest } else { leg.origin })
         .min_by_key(|&port| inst.sail(start, port))
 }
+
+/// The exact stop order, by dynamic programming over (picked, delivered, here).
+///
+/// Nearest neighbour is a heuristic and this is not: with a capacity of four
+/// there are at most eight events, so the state space is `3^n` assignments
+/// times a port, which is a few thousand cells. Held-Karp for pickup and
+/// delivery, small enough that "solve it exactly" costs less than thinking
+/// about whether the heuristic is good enough.
+///
+/// It matters less for the route than for the *ranking* built on top of it: a
+/// tour priced 5% long makes every delta slightly wrong, and the deltas are
+/// what the policy actually reads.
+pub fn ticks_exact(inst: &Instance, start: usize, legs: &[Leg]) -> i64 {
+    let n = legs.len();
+    if n == 0 {
+        return 0;
+    }
+    debug_assert!(n <= MAX_HELD);
+    let full = (1usize << n) - 1;
+    let picked0: usize = legs
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| l.loaded)
+        .map(|(i, _)| 1 << i)
+        .sum();
+
+    // memo[picked][delivered][here], i64::MAX for "not yet computed"
+    let span = inst.n_ports;
+    let mut memo = vec![i64::MAX; (1 << n) * (1 << n) * span];
+    best(inst, legs, n, full, picked0, 0, start, &mut memo, span)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn best(
+    inst: &Instance,
+    legs: &[Leg],
+    n: usize,
+    full: usize,
+    picked: usize,
+    delivered: usize,
+    here: usize,
+    memo: &mut Vec<i64>,
+    span: usize,
+) -> i64 {
+    if delivered == full {
+        return 0;
+    }
+    let slot = (picked * (1 << n) + delivered) * span + here;
+    if memo[slot] != i64::MAX {
+        return memo[slot];
+    }
+    let mut found = i64::MAX;
+    for i in 0..n {
+        let bit = 1 << i;
+        // deliver what is aboard, or go and pick up what is not
+        let (port, next_picked, next_delivered) = if picked & bit != 0 {
+            if delivered & bit != 0 {
+                continue;
+            }
+            (legs[i].dest, picked, delivered | bit)
+        } else {
+            (legs[i].origin, picked | bit, delivered)
+        };
+        let step = inst.sail(here, port) as i64
+            + best(
+                inst,
+                legs,
+                n,
+                full,
+                next_picked,
+                next_delivered,
+                port,
+                memo,
+                span,
+            );
+        found = found.min(step);
+    }
+    memo[slot] = found;
+    found
+}
+
+/// Ticks for a route, exactly or by nearest neighbour.
+pub fn ticks_by(inst: &Instance, start: usize, legs: &[Leg], exact: bool) -> i64 {
+    if exact {
+        ticks_exact(inst, start, legs)
+    } else {
+        ticks(inst, start, legs)
+    }
+}
+
+/// XP per hour of a route, exactly or by nearest neighbour.
+pub fn rate_by(inst: &Instance, start: usize, legs: &[Leg], exact: bool) -> f64 {
+    let sailed = ticks_by(inst, start, legs, exact);
+    if sailed <= 0 {
+        return 0.0;
+    }
+    let xp: i64 = legs.iter().map(|l| l.xp).sum();
+    xp as f64 / sailed as f64 * 3600.0 / TICK
+}

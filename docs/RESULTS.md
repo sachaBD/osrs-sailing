@@ -223,3 +223,80 @@ five of about twenty, so they are rarely all on offer at once.
 
 So the gap to the 147k bundle ceiling is not the rule failing to refuse
 filler. It is that the good corridor cannot often be filled.
+
+
+## The lab: what beats the baseline, and what does not (2026-09-08)
+
+Three attempts on the rules baseline, every one measured **paired** - the same
+seeds for every policy, and the interval quoted on the *difference*. Level 67,
+100 seeds of 3.3 hours. `search/src/lab.rs` holds all of it; the baseline in
+`policy.rs` is untouched and still scores 87,874 to the digit.
+
+| policy | xp/hr | vs baseline, paired | cost |
+| --- | --- | --- | --- |
+| baseline | 87,724 +/- 1,154 | - | 1 ms |
+| exact routing | 86,976 +/- 1,300 | **-749 +/- 531** | 6 ms |
+| rho = 86,656 | 82,778 +/- 1,091 | **-4,946 +/- 1,383** | 1 ms |
+| rho + exact | 82,481 +/- 1,118 | -5,243 +/- 1,396 | 5 ms |
+| rollout, 8 futures x 1,800 ticks | 94,376 +/- 1,351 | +6,652 +/- 1,571 | 2.7 s |
+| rollout, 16 x 1,800 | 96,958 +/- 1,390 | +9,233 +/- 1,702 | 5.0 s |
+| rollout, 8 x 3,600 | 98,228 +/- 1,243 | +10,504 +/- 1,575 | 6.2 s |
+| rollout, 16 x 3,600 | **101,410 +/- 1,207** | **+13,686 +/- 1,513** | 11.5 s |
+
+### The gain-optimal acceptance rule loses, and the reason is worth keeping
+
+`PROBLEM.md` and `APPROACH.md` both prescribe the rho-parametrisation: accept
+when `xp - rho * dt > 0`, with rho the long-run rate. Applied to this policy it
+is **5,000 xp/hr worse**, and the first version of it scored 4,068 - barely
+above zero.
+
+The rule is right for choosing a *cycle* and wrong for a greedy sequential
+acceptance, because the anchor task bears the whole trip's travel. At level 67
+exactly three tasks in the game clear rho = 86,656 on their delivery leg alone,
+so a policy that gates its first pick on rho stands still waiting for one.
+Ungating the anchor - the alternative to starting a trip is not "earn rho", it
+is "earn zero" - recovers most of it and still loses.
+
+What the baseline does instead is better than the textbook: **"does this raise
+the trip's own rate" is a state-dependent rho.** On a hot trip it demands more,
+on a cold one less, which tracks opportunity cost the way a relative-value
+function does and a scalar cannot. The constant is the standard answer and the
+hand-written rule is closer to the right object.
+
+### Exact routing does not pay either
+
+Nearest-neighbour ordering replaced by exact Held-Karp over (picked, delivered,
+here) - a few thousand cells at capacity four. It is **-749 +/- 531** at six
+times the cost. A better tour changes the ranking slightly without improving
+it; nearest neighbour's error was apparently harmless and possibly a mild
+regulariser. Kept in `route.rs` as `ticks_exact` because it is the honest
+reference for what the heuristic costs, which turns out to be nothing.
+
+### Rollout works, and has not saturated
+
+One step of policy iteration over the baseline: try each candidate move, let
+the baseline finish, play whichever led somewhere best. **+13,686 +/- 1,513,
+about 16%**, and the first policy in this project to cross 100k.
+
+The first attempt scored 409 xp/hr. Three defects, and all three are the same
+ones `RESULTS.md` recorded the last time this project built a rollout:
+
+- **The sampled worlds were rebuilt for every candidate.** So candidates were
+  not compared against identical futures, and since drawing 21 boards costs
+  more than the rollout it pays for, it was also 3.5x slower than it needed to
+  be. Build the worlds once per decision and share them.
+- **No incumbent.** Every candidate converges back to base behaviour within a
+  few hundred ticks, so they score alike, the argmax picks whichever noise
+  favoured, and the policy chartered in circles. The base's own move is now the
+  incumbent and only loses to a strict improvement.
+- **Twenty candidates that could not matter** - chartering to boards already
+  read this epoch, which tells you nothing you do not know.
+
+Both futures and horizon are still monotone at 16 and 3,600, so the knee has
+not been found; the sweep stopped because 11.5 s an episode was already 10,000x
+the baseline's cost, not because more stopped helping.
+
+Read the uplift as a **bound on what the hand-written rule leaves on the
+table** - about 16% - rather than as a policy anyone would run. It needs a
+simulator, and it needs eleven seconds to plan what the baseline plans in one
+millisecond.

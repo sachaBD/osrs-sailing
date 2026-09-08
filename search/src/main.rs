@@ -3,6 +3,7 @@
 //!     cargo run --release -- run 60          the baseline, 30 seeds
 //!     cargo run --release -- walk 67 0 3000  one episode, action by action
 //!     cargo run --release -- tally 67 300      which tasks it actually accepts
+//!     cargo run --release -- lab 67 100        every experiment, paired against the baseline
 //!     cargo run --release -- describe 60
 //!     cargo run --release -- trace 60 7 400 > out/trace.json
 //!
@@ -16,7 +17,7 @@ use porttasks_search::evaluate::{self, HORIZON, SEEDS};
 use porttasks_search::policy::Baseline;
 use porttasks_search::policy::Policy;
 use porttasks_search::route::TICK;
-use porttasks_search::{trace, Action, Instance, Sim};
+use porttasks_search::{lab, trace, Action, Instance, Sim};
 
 const DEFAULT_LEVEL: u32 = 67;
 
@@ -32,6 +33,7 @@ fn main() {
         Some("describe") => describe(rest),
         Some("walk") => walk(rest),
         Some("tally") => tally(rest),
+        Some("lab") => lab(rest),
         Some("trace") => emit_trace(rest),
         Some(other) => fail(&format!("unknown command: {other}")),
     }
@@ -236,6 +238,50 @@ fn tally(args: &[String]) {
             instance.task_xp[t] as f64 / leg as f64 * 3600.0 / TICK,
             100.0 * at_hold[t][0] as f64 / taken[t] as f64,
             instance.task_names[t]
+        );
+    }
+}
+
+/// Every variant in `lab::variants`, against the baseline on the same seeds.
+fn lab(args: &[String]) {
+    let level = args.first().map(num).unwrap_or(DEFAULT_LEVEL as u64) as u32;
+    let seeds = args.get(1).map(num).unwrap_or(100);
+    let instance = load(level);
+
+    // rho is the long-run rate the policy is trying to achieve, so it is
+    // bootstrapped from what the baseline actually achieves rather than picked
+    let warm = evaluate::rates(&instance, Baseline::new, 30.min(seeds), HORIZON, 0);
+    let rho = warm.iter().sum::<f64>() / warm.len() as f64;
+
+    println!("{}", instance.describe());
+    println!(
+        "{seeds} seeds, {:.1}h each.  rho bootstrapped from the baseline at {rho:.0} xp/hr\n",
+        HORIZON as f64 * TICK / 3600.0
+    );
+    println!(
+        "  {:22} {:>9}  {:>8}     {:>18}  cost",
+        "policy", "xp/hr", "+/-", "vs baseline (paired)"
+    );
+
+    let variants = lab::variants(rho);
+    let mut reference: Vec<f64> = Vec::new();
+    for (name, make) in &variants {
+        let clock = Instant::now();
+        let rates = evaluate::rates_dyn(&instance, make.as_ref(), seeds, HORIZON, 0);
+        let each = clock.elapsed().as_secs_f64() / seeds as f64;
+        let score = evaluate::Score::summarise(&rates);
+        let against = if reference.is_empty() {
+            reference = rates.clone();
+            "  -".to_string()
+        } else {
+            let d = evaluate::paired(&rates, &reference);
+            format!("{:+9.0} +/- {:5.0}", d.mean, d.error)
+        };
+        println!(
+            "  {name:22} {:>9.0}  +/-{:>6.0}     {against:>18}  {:>6.0} ms",
+            score.mean,
+            score.error,
+            each * 1000.0
         );
     }
 }

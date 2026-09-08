@@ -17,10 +17,12 @@
 
 pub mod evaluate;
 pub mod instance;
+pub mod lab;
 pub mod policy;
 pub mod route;
 pub mod sim;
 pub mod trace;
 
 pub use instance::{Instance, NONE};
+pub use policy::{Baseline, Policy};
 pub use sim::{Action, Sim, State, Step};

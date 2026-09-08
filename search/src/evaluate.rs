@@ -16,6 +16,7 @@ use crate::instance::Instance;
 use crate::policy::Policy;
 use crate::route::TICK;
 use crate::sim::Sim;
+use crate::sim::State;
 
 /// About 3.3 hours of play, the horizon the Python harness used.
 pub const HORIZON: i64 = 20_000;
@@ -30,7 +31,7 @@ pub struct Score {
 }
 
 impl Score {
-    fn of(rates: &[f64]) -> Score {
+    pub(crate) fn of(rates: &[f64]) -> Score {
         let n = rates.len() as f64;
         let mean = rates.iter().sum::<f64>() / n;
         let var = rates.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / (n - 1.0);
@@ -60,4 +61,70 @@ where
         })
         .collect();
     Score::of(&rates)
+}
+
+/// Every seed's rate, kept rather than summarised, so two policies can be
+/// compared on the same seeds afterwards.
+pub fn rates<P, F>(inst: &Instance, make: F, seeds: u64, horizon: i64, start: usize) -> Vec<f64>
+where
+    F: Fn(&Instance) -> P + Sync,
+    P: Policy,
+{
+    (0..seeds)
+        .into_par_iter()
+        .map(|seed| {
+            let sim = Sim::new(inst);
+            let mut policy = make(inst);
+            let mut state = sim.reset(seed, start);
+            while state.ticks < horizon {
+                let action = policy.act(&sim, &state);
+                state = sim.step(&state, action).state;
+            }
+            state.xp as f64 / state.ticks as f64 * 3600.0 / TICK
+        })
+        .collect()
+}
+
+/// The same, for a policy behind a `Box<dyn Policy>`, which is what the lab's
+/// table of variants hands over.
+pub fn rates_dyn(
+    inst: &Instance,
+    make: &(dyn Fn(&Instance) -> Box<dyn Policy> + Sync),
+    seeds: u64,
+    horizon: i64,
+    start: usize,
+) -> Vec<f64> {
+    (0..seeds)
+        .into_par_iter()
+        .map(|seed| {
+            let sim = Sim::new(inst);
+            let mut policy = make(inst);
+            let mut state: State = sim.reset(seed, start);
+            while state.ticks < horizon {
+                let action = policy.act(&sim, &state);
+                state = sim.step(&state, action).state;
+            }
+            state.xp as f64 / state.ticks as f64 * 3600.0 / TICK
+        })
+        .collect()
+}
+
+/// The difference between two policies on the *same* seeds.
+///
+/// This is the number to read, not the gap between two independent means. Seed
+/// variance here is large and shared - a lucky draw is lucky for everyone - so
+/// pairing can tighten the interval on the difference far below the interval on
+/// either policy. When it does not, that is worth knowing too: it says the
+/// policies are diverging into genuinely different episodes rather than playing
+/// the same one better or worse.
+pub fn paired(mine: &[f64], theirs: &[f64]) -> Score {
+    assert_eq!(mine.len(), theirs.len(), "paired needs the same seeds");
+    let diffs: Vec<f64> = mine.iter().zip(theirs).map(|(a, b)| a - b).collect();
+    Score::of(&diffs)
+}
+
+impl Score {
+    pub fn summarise(rates: &[f64]) -> Score {
+        Score::of(rates)
+    }
 }

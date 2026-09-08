@@ -121,6 +121,11 @@ impl Offers {
 pub struct Sim<'a> {
     pub inst: &'a Instance,
     draw: RefCell<Option<((u64, u32), Offers)>>,
+    /// A believed world, for planning rather than for playing: the offers to
+    /// report for one epoch instead of the true draw. See [`Sim::imagining`].
+    belief: Option<(u32, Offers)>,
+    /// The seed the imagined world's later epochs draw from.
+    imagined: u64,
 }
 
 impl<'a> Sim<'a> {
@@ -139,7 +144,50 @@ impl<'a> Sim<'a> {
         Sim {
             inst,
             draw: RefCell::new(None),
+            belief: None,
+            imagined: 0,
         }
+    }
+
+    /// A sim that plays out one guess at the world instead of the real one.
+    ///
+    /// Boards `state` has already read keep their true contents; every unread
+    /// board is redrawn from its own pool. That is exactly the draw the
+    /// environment makes at a reroll, so a planner sampling futures and the
+    /// simulator generating them cannot disagree about the prior.
+    ///
+    /// Only the current epoch is imagined. Past it the guess is worthless
+    /// anyway - a reroll replaces every board - so later epochs fall back to
+    /// the ordinary draw under `sample` as the seed, which is what makes one
+    /// sampled future differ from another.
+    pub fn imagining(inst: &'a Instance, state: &State, sample: u64) -> Sim<'a> {
+        let mut sim = Sim::new(inst);
+        let k = inst.params.courier_per_board;
+        let mut guess = sim.true_offers(state.seed, state.epoch);
+        let mut rng = Pcg64Mcg::seed_from_u64(mix(sample, state.epoch));
+        let mut bag: Vec<i32> = Vec::new();
+        for port in 0..inst.n_ports {
+            if !inst.has_board[port] || state.has_seen(port) {
+                continue;
+            }
+            bag.clear();
+            bag.extend_from_slice(inst.board_pool(port));
+            let n = bag.len();
+            for i in 0..k {
+                bag.swap(i, i + rng.random_range(0..n - i));
+            }
+            guess.flat[port * k..port * k + k].copy_from_slice(&bag[..k]);
+        }
+        sim.belief = Some((state.epoch, guess));
+        sim.imagined = sample;
+        sim
+    }
+
+    /// The seed an imagined world's later epochs draw from, so a planner can
+    /// keep the future imagined across a reroll instead of reverting to the
+    /// real one - which would be reading the answer sheet.
+    pub fn imagined_seed(&self) -> u64 {
+        self.imagined
     }
 
     // ---- the hidden world ------------------------------------------------
@@ -153,6 +201,11 @@ impl<'a> Sim<'a> {
     /// that nearly agree, so this end owns it and the differential test feeds
     /// both sides the same offers rather than the same seed.
     pub fn true_offers(&self, seed: u64, epoch: u32) -> Offers {
+        if let Some((believed, offers)) = &self.belief {
+            if *believed == epoch {
+                return offers.clone();
+            }
+        }
         if let Some((key, offers)) = self.draw.borrow().as_ref() {
             if *key == (seed, epoch) {
                 return offers.clone();

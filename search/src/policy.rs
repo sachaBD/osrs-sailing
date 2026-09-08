@@ -60,14 +60,40 @@ pub trait Policy {
     fn act(&mut self, sim: &Sim, state: &State) -> Action;
 }
 
+/// The two seams the lab is allowed to move. `Default` is the baseline
+/// exactly as measured, so an untuned `Baseline` is the committed policy and
+/// the tests that guard it guard this too. See `lab/` for what they are for.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Tuning {
+    /// Accept on `xp - rho * ticks` rather than "does this raise the trip's
+    /// own rate". The trip's rate is a *local* rho; the long-run rate is the
+    /// one the objective actually asks about, and they are not equal.
+    ///
+    /// The gate is not applied to the first pick. A task that anchors an empty
+    /// hold bears the whole trip's travel, so almost nothing clears rho on its
+    /// own - at level 67 only three tasks in the game do - and a policy that
+    /// waits for one of them earns nothing while it waits. The alternative to
+    /// starting a trip is not "earn rho", it is "earn zero", so the anchor is
+    /// taken on best surplus whatever its sign, and rho gates only what is
+    /// added to it.
+    pub rho: Option<f64>,
+    /// Order the stops exactly instead of by nearest neighbour.
+    pub exact_route: bool,
+}
+
 pub struct Baseline {
     /// Boards we can reach without the boat, so the only ones worth ranking.
     scoutable: Vec<bool>,
     shipwrights: Vec<usize>,
+    tuning: Tuning,
 }
 
 impl Baseline {
     pub fn new(inst: &Instance) -> Baseline {
+        Baseline::tuned(inst, Tuning::default())
+    }
+
+    pub fn tuned(inst: &Instance, tuning: Tuning) -> Baseline {
         Baseline {
             scoutable: (0..inst.n_ports)
                 .map(|p| inst.has_board[p] && inst.travel[p] != NONE)
@@ -75,6 +101,7 @@ impl Baseline {
             shipwrights: (0..inst.n_ports)
                 .filter(|&p| inst.recall[p] != NONE)
                 .collect(),
+            tuning,
         }
     }
 }
@@ -225,12 +252,12 @@ impl Baseline {
             .unwrap_or(state.port_boat)
     }
 
-    /// What accepting `task` would do to the XP/hr of the whole held set.
-    ///
-    /// Both sides are re-sequenced and re-priced, and each from its own
-    /// rendezvous: adding a task can change where the boat should meet us, and
-    /// pricing the two sets from one port would hide that.
-    fn delta(&self, inst: &Instance, state: &State, held: &[Leg], task: i32) -> f64 {
+    /// What accepting `task` costs and earns: the XP it adds, and the ticks
+    /// the route grows by. Both sides are re-sequenced and re-priced, and each
+    /// from its own rendezvous, because adding a task can change where the
+    /// boat should meet us and pricing both from one port would hide that.
+    fn marginal(&self, inst: &Instance, state: &State, held: &[Leg], task: i32) -> (f64, f64) {
+        let exact = self.tuning.exact_route;
         let mut with = [Leg {
             origin: 0,
             dest: 0,
@@ -240,9 +267,25 @@ impl Baseline {
         with[..held.len()].copy_from_slice(held);
         with[held.len()] = leg(inst, task, false);
         let with = &with[..held.len() + 1];
-        // each set priced from where its own boat would meet it
-        let after = route::rate(inst, self.priced_from(inst, state, with), with);
-        after - route::rate(inst, self.priced_from(inst, state, held), held)
+        let before = route::ticks_by(inst, self.priced_from(inst, state, held), held, exact);
+        let after = route::ticks_by(inst, self.priced_from(inst, state, with), with, exact);
+        (inst.task_xp[task as usize] as f64, (after - before) as f64)
+    }
+
+    /// What accepting `task` would do to the XP/hr of the whole held set.
+    fn delta(&self, inst: &Instance, state: &State, held: &[Leg], task: i32) -> f64 {
+        let exact = self.tuning.exact_route;
+        let mut with = [Leg {
+            origin: 0,
+            dest: 0,
+            loaded: false,
+            xp: 0,
+        }; crate::sim::MAX_HELD];
+        with[..held.len()].copy_from_slice(held);
+        with[held.len()] = leg(inst, task, false);
+        let with = &with[..held.len() + 1];
+        let after = route::rate_by(inst, self.priced_from(inst, state, with), with, exact);
+        after - route::rate_by(inst, self.priced_from(inst, state, held), held, exact)
     }
 
     /// Step 1's measure: XP per hour of the delivery leg alone, ignoring how
@@ -259,6 +302,12 @@ impl Baseline {
     /// How good a task looks: the standalone rate for the first pick, the
     /// delta to the trip for every one after it.
     fn score(&self, inst: &Instance, state: &State, held: &[Leg], task: i32) -> f64 {
+        if let Some(rho) = self.tuning.rho {
+            // the gain-optimal test: is this worth more than the time it costs,
+            // valued at what the policy earns per tick over the long run?
+            let (xp, ticks) = self.marginal(inst, state, held, task);
+            return xp - rho * ticks * route::TICK / 3600.0;
+        }
         if held.is_empty() {
             self.standalone(inst, task)
         } else {
@@ -300,7 +349,8 @@ impl Baseline {
                     && (!state.has_seen(board) || offers.at(board).contains(&t))
             })
             .map(|t| (t, self.score(inst, state, held, t)))
-            .filter(|&(_, s)| s > 0.0)
+            // rho does not gate the anchor: see `Tuning::rho`
+            .filter(|&(_, s)| s > 0.0 || (held.is_empty() && self.tuning.rho.is_some()))
             .max_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(t, _)| (t, inst.task_board[t as usize] as usize))
     }
