@@ -322,6 +322,17 @@ Note this corrects the row above. Reading "16 x 3,600 beats 8 x 1,800" as *the
 horizon* not having saturated was wrong - the futures were doing that work.
 More sampled futures still helps; more horizon, past 2,700, does not.
 
+**The best measured configuration is 16 futures x 3,600 ticks, at 101,410
+xp/hr (+13,686 +/- 1,513), and it is the only policy here to cross 100k.** The
+two sweeps together imply that **16 x 2,700 should score the same for about a
+quarter less compute** - the horizon is flat past the knee and the futures are
+what buy the improvement - but that configuration has not been run. It is the
+obvious next measurement and the cheapest one outstanding.
+
+`Rollout::new` defaults to 8 x 2,700: the knee on the horizon, at the futures
+the sweep was run with. It is not the strongest setting, only the honest
+default for one that has been measured end to end.
+
 Read the uplift as a **bound on what the hand-written rule leaves on the
 table** - about 16% - rather than as a policy anyone would run. It needs a
 simulator, and it needs eleven seconds to plan what the baseline plans in one
