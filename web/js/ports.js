@@ -9,6 +9,9 @@ const meta = (name) => LOCATIONS[name] || {};
 
 export const regionOf = (name) => meta(name).region || 'Unknown';
 export const oceansOf = (name) => meta(name).oceans || [];
+/** The quest a port needs, e.g. "Song of the Elves", or null for none. */
+export const questOf = (name) =>
+  (meta(name).requirements || '').replace(/^(partial )?completion of /i, '') || null;
 export const dockLevelOf = (name) => Number(meta(name).dock_level) || 0;
 
 /** A shipwright is what lets you recover a capsized or parked boat. */
@@ -32,4 +35,5 @@ const sortedUnique = (values) => [...new Set(values)].sort((a, b) => a.localeCom
 
 export const allPorts = sortedUnique(TASKS.flatMap((t) => [t.noticeBoard, t.from, t.to]));
 export const allRegions = sortedUnique(Object.values(LOCATIONS).map((v) => v.region));
+export const allQuests = sortedUnique(Object.keys(LOCATIONS).map(questOf).filter(Boolean));
 export const allOceans = sortedUnique(Object.values(LOCATIONS).flatMap((v) => v.oceans));

@@ -1,6 +1,6 @@
 /* Bootstrap and event wiring. The only module that knows about all the others. */
 import { $, $$ } from './dom.js';
-import { TASKS, allPorts, allRegions, allOceans, MAP_META } from './ports.js';
+import { TASKS, allPorts, allRegions, allOceans, allQuests, MAP_META } from './ports.js';
 import {
   state, subscribe, update, stateToUrl, urlToState,
   restoreFromStorageIfBare, resetState, DEFAULTS,
@@ -75,6 +75,7 @@ function wireFilters() {
   multiSelect('#f-calls', allPorts, 'Any port', state.calls, update);
   multiSelect('#f-region', allRegions, 'Any region', state.region, update);
   multiSelect('#f-ocean', allOceans, 'Any ocean', state.ocean, update);
+  multiSelect('#f-quests', allQuests, 'All done', state.missingQuests, update);
   closeMenusOnOutsideClick();
   bindControls();
 

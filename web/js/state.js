@@ -29,6 +29,7 @@ export const state = {
   calls: new Set(),     // ports a task touches at either end
   region: new Set(),
   ocean: new Set(),
+  missingQuests: new Set(), // quests not done: ports needing them are excluded
   trip: [],             // ordered task ids in the route builder
   tripStart: '',
 };
@@ -43,13 +44,13 @@ export const update = () => listeners.forEach((fn) => fn());
 const URL_STR = ['q', 'board', 'direction', 'scope', 'sortKey', 'sortDir', 'tripStart'];
 const URL_NUM = ['minLevel', 'maxLevel', 'minXp', 'maxXp', 'corridor', 'freeSlots'];
 const URL_BOOL = ['hideUnknownXp', 'recoverAtOrigin', 'boardAtDest', 'showAllRoutes', 'mapOpen'];
-const URL_SET = ['from', 'to', 'calls', 'region', 'ocean'];
+const URL_SET = ['from', 'to', 'calls', 'region', 'ocean', 'missingQuests'];
 const SEP = '~';   // port names hold spaces, commas and apostrophes; never this
 
 /* Param names are part of the app's public surface: links get shared and
    bookmarked. Where a state key reads better than its original param, the
    original name wins. */
-const PARAM = { mapOpen: 'map', showAllRoutes: 'allRoutes' };
+const PARAM = { mapOpen: 'map', showAllRoutes: 'allRoutes', missingQuests: 'noQuest' };
 const param = (key) => PARAM[key] || key;
 const STORE_KEY = 'osrs-port-tasks:filters:v1';
 

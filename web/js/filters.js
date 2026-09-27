@@ -1,6 +1,6 @@
 /* Turning the state into the list of tasks on screen. */
 import { state } from './state.js';
-import { TASKS, legsOf, regionOf, oceansOf, canRecoverAt, hasBoardAt } from './ports.js';
+import { TASKS, legsOf, regionOf, oceansOf, questOf, canRecoverAt, hasBoardAt } from './ports.js';
 import { legDistance, taskSeconds, taskXpPerHour } from './cost.js';
 import { xpLift } from './trip.js';
 
@@ -50,6 +50,9 @@ export function filtered() {
     if (state.calls.size && !state.calls.has(t.from) && !state.calls.has(t.to)) return false;
     if (!matchesScope(t, state.region, (p) => [regionOf(p)])) return false;
     if (!matchesScope(t, state.ocean, oceansOf)) return false;
+    // a port you cannot reach rules out every task touching it, at any end
+    if (state.missingQuests.size &&
+        [t.noticeBoard, t.from, t.to].some((p) => state.missingQuests.has(questOf(p)))) return false;
     if (state.recoverAtOrigin && !canRecoverAt(t.from)) return false;
     if (state.boardAtDest && !hasBoardAt(t.to)) return false;
     // unknown XP cannot satisfy a numeric bound, so any XP filter excludes it
