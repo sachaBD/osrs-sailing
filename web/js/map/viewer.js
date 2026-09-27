@@ -7,10 +7,11 @@ import { $, store, stored } from '../dom.js';
 import { MAP_META, portXY } from '../ports.js';
 
 const VIEW_KEY = 'osrs-port-tasks:view:v1';
-const MIN_SCALE = 0.3;
 const MAX_SCALE = 3;
 const FINE_TILES_ABOVE = 1.1;   // switch to zoom-1 tiles past this scale
-const MIN_VISIBLE = 140;        // px of map kept on screen when panning
+/* The wiki renders the southernmost game tiles of our grid as empty void, a
+   dark band along the bottom. Treat the map as ending where the sea does. */
+const VOID_SOUTH = 54;
 
 export const view = { scale: 0.55, x: 0, y: 0, tileZoom: 0, ready: false };
 
@@ -47,23 +48,42 @@ function drawTiles() {
         img.src = tileUrl(MAP_META.remoteUrl, view.tileZoom, tx, ty);
       };
       const [left, top] = toLayer(tx * span, (ty + 1) * span);
-      Object.assign(img.style,
-        { left: `${left}px`, top: `${top}px`, width: `${span}px`, height: `${span}px` });
+      // Scaled tiles land on fractional screen pixels and blend their edges
+      // with whatever is behind, tracing the tile grid in hairlines. Overlap
+      // each by a screen pixel and a half (--inv is 1 / scale) to hide it.
+      const size = `calc(${span}px + 1.5px * var(--inv))`;
+      Object.assign(img.style, { left: `${left}px`, top: `${top}px`, width: size, height: size });
       frag.appendChild(img);
     }
   }
   el.tiles.replaceChildren(frag);
 }
 
-/** Keep some map on screen; otherwise it can be flung out of reach. */
-function clampPan() {
+/** The map's drawable extent, in layer coordinates. */
+const mapW = () => MAP_META.size[0];
+const mapH = () => MAP_META.size[1] - VOID_SOUTH;
+
+/** Zooming out stops at the whole map: any further only adds empty space. */
+function minScale() {
+  const box = el.viewport.getBoundingClientRect();
+  if (!box.width) return 0;
+  return Math.min(MAX_SCALE, box.width / mapW(), box.height / mapH());
+}
+const clampScale = (s) => Math.min(MAX_SCALE, Math.max(minScale(), s));
+
+/** On each axis: a map wider than the viewport may pan but never pull its
+    edge inside the viewport's; a narrower one sits centred. */
+function clampAxis(offset, viewport, extent) {
+  const spare = viewport - extent;
+  return spare >= 0 ? spare / 2 : Math.min(0, Math.max(spare, offset));
+}
+
+function clampView() {
   const box = el.viewport.getBoundingClientRect();
   if (!box.width) return;
-  const w = MAP_META.size[0] * view.scale;
-  const h = MAP_META.size[1] * view.scale;
-  const keep = Math.min(MIN_VISIBLE, w / 2, h / 2);
-  view.x = Math.min(box.width - keep, Math.max(keep - w, view.x));
-  view.y = Math.min(box.height - keep, Math.max(keep - h, view.y));
+  view.scale = clampScale(view.scale);
+  view.x = clampAxis(view.x, box.width, mapW() * view.scale);
+  view.y = clampAxis(view.y, box.height, mapH() * view.scale);
 }
 
 let saveTimer = null;
@@ -75,7 +95,7 @@ function saveView() {
 }
 
 export function applyTransform() {
-  clampPan();
+  clampView();
   el.layer.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
   // markers and labels counter-scale so they stay a constant size on screen
   el.layer.style.setProperty('--inv', 1 / view.scale);
@@ -90,7 +110,7 @@ export function applyTransform() {
 }
 
 export function zoomAt(factor, cx, cy) {
-  const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, view.scale * factor));
+  const next = clampScale(view.scale * factor);
   const ratio = next / view.scale;
   // keep whatever is under the cursor fixed
   view.x = cx - (cx - view.x) * ratio;
@@ -110,9 +130,9 @@ export function fit(ports) {
   const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
   const pad = 70;
 
-  view.scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(
+  view.scale = clampScale(Math.min(
     (box.width - pad * 2) / Math.max(1, maxX - minX),
-    (box.height - pad * 2) / Math.max(1, maxY - minY))));
+    (box.height - pad * 2) / Math.max(1, maxY - minY)));
   view.x = box.width / 2 - ((minX + maxX) / 2) * view.scale;
   view.y = box.height / 2 - ((minY + maxY) / 2) * view.scale;
   applyTransform();
@@ -124,7 +144,7 @@ export function restoreViewOrFit(ports) {
     try {
       const v = JSON.parse(saved);
       if ([v.scale, v.x, v.y].every(Number.isFinite)) {
-        view.scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v.scale));
+        view.scale = v.scale;   // applyTransform clamps it to this screen
         view.x = v.x;
         view.y = v.y;
         applyTransform();
@@ -146,6 +166,7 @@ export function initViewer({ onPortClick }) {
     svg: $('#map-overlay'),
     zoomLabel: $('#map-zoom-label'),
   });
+  Object.assign(el.tiles.style, { width: `${mapW()}px`, height: `${mapH()}px` });
   drawTiles();
 
   let dragging = false, moved = false, lastX = 0, lastY = 0, startX = 0, startY = 0;

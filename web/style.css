@@ -119,11 +119,18 @@ tbody tr:hover { background: #221d16; }
   overflow: hidden; cursor: grab; touch-action: none;
   /* without this a drag selects the map labels instead of panning */
   user-select: none; -webkit-user-select: none;
-  background: #0e1a24;
+  background: var(--bg);   /* beside a zoomed-out map: the page, not a void */
 }
 #map-viewport:active { cursor: grabbing; }
 #map-layer { position: absolute; top: 0; left: 0; transform-origin: 0 0; --inv: 1; }
-#map-tiles { position: absolute; top: 0; left: 0; }
+/* The map as a chart laid on the page. Sized in JS to the map's extent, and
+   clipping, so the wiki's void strip along the south edge never shows. The
+   layer is scaled, so the edge is sized by --inv to stay constant on screen. */
+#map-tiles {
+  position: absolute; top: 0; left: 0; overflow: hidden;
+  outline: calc(1px * var(--inv)) solid var(--line);
+  box-shadow: 0 0 calc(28px * var(--inv)) rgba(0, 0, 0, .7);
+}
 .map-tile {
   position: absolute; image-rendering: pixelated;
   user-select: none; -webkit-user-drag: none;

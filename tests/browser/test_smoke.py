@@ -103,6 +103,9 @@ def _drag(page, steps):
 
 
 def test_drag_pans_by_the_mouse_delta(map_open):
+    # a map smaller than the viewport sits centred, so zoom in to give it room
+    for _ in range(5):
+        map_open.click('#map-in')
     start = map_open.evaluate('() => ({x: __app.view.x, y: __app.view.y})')
     _drag(map_open, [(-i * 20, -i * 10) for i in range(1, 7)])
     end = map_open.evaluate('() => ({x: __app.view.x, y: __app.view.y})')
